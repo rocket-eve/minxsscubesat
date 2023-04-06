@@ -69,18 +69,31 @@ end
 ;     cryo_cold: in, option, type=boolean
 ;       Set this keyword to choose the conversion for the cryo_cold thermistor.
 ;       This conversion is a 2nd order polynomial as an argument to a line.
-;     megsa_ccd_temp: in, option, type=boolean
-;       Set this keyword to choose the conversion for the megsa_ccd_temp thermistor.
+;     megsa_ccd_prt_temp: in, option, type=boolean
+;       Set this keyword to choose the conversion for the
+;       megsa_ccd_prt_temp thermistor. (assume board 003 platinum)
 ;       This conversion is linear.
-;     megsb_ccd_temp: in, option, type=boolean
-;       Set this keyword to choose the conversion for the megsa_ccd_temp thermistor.
+;     megsb_ccd_prt_temp: in, option, type=boolean
+;       Set this keyword to choose the conversion for the
+;       megsb_ccd_prt_temp thermistor. (assume board 004 platinum)
+;       This conversion is linear.
+;     megsa_ccd_diode_temp: in, option, type=boolean
+;       Set this keyword to choose the conversion for the
+;       megsa_ccd_diode_temp thermistor. (assume board 003 diode)
+;       This conversion is linear.
+;     megsb_ccd_diode_temp: in, option, type=boolean
+;       Set this keyword to choose the conversion for the
+;       megsb_ccd_diode_temp thermistor. (assume board 004 diode)
 ;       This conversion is linear.
 ;
+; DLW 4/5/23 Added megsa/b_ccd_prt/diode_temp keywords and Bennet's initial conversion
 ;-
 function convert_temperatures, $
    raw, $
    megsp_temp=megsp_temp, xrs_temp=xrs_temp, cryo_hot=cryo_hot, $
-   cryo_cold=cryo_cold, megsa_ccd_temp=megsa_ccd_temp, megsb_ccd_temp=megsb_ccd_temp
+   cryo_cold=cryo_cold, $ ; megsa_ccd_temp=megsa_ccd_temp, megsb_ccd_temp=megsb_ccd_temp,  ; MEGS-A/B CCD TEMP were replaced
+   megsa_ccd_prt_temp=megsa_ccd_prt_temp, megsb_ccd_prt_temp=megsb_ccd_prt_temp, $
+   megsa_ccd_diode_temp=megsa_ccd_diode_temp, megsb_ccd_diode_temp=megsb_ccd_diode_temp
 
   woods5 = [0.00147408,0.00023701459,1.0839894e-7]
   woods6 = [0.0014051,0.0002369,1.019e-7]
@@ -92,6 +105,12 @@ function convert_temperatures, $
   woods15 = [15.0,11.71,5.816]
   woods17 = [257.122,-257.199]
 
+  ; conversions provided by Bennet Schwab 3/31/23
+  board3_prt = [51.678364, -159.89857]   ; MA? (possibly -183.9 instead)
+  board4_prt = [51.956196, -160.56519] ; MB? (possibly -184.6 instead)
+  board3_diode = [-67.323044, 211.56467] ; MA?
+  board4_diode = [-67.629051, 212.42528] ; MB?
+  
   if keyword_set(megsp_temp) then begin
      ;R_therm_MEGSP = woods14[1]/((woods14[0]/(raw))-(woods14[1]/woods14[2])-1)*1000
      ;t_MEGSP = 1/(woods7[0]+woods7[1]*alog(R_therm_MEGSP)+woods7[2]*((alog(R_therm_MEGSP))^3))-273.15
@@ -120,12 +139,30 @@ function convert_temperatures, $
      return,t_Cold_Finger
   endif
 
-  if keyword_set( megsa_ccd_temp ) then begin
-     return, 34.5*raw - 143.
+  ; no longer used
+  ;if keyword_set( megsa_ccd_temp ) then begin
+  ;   return, 34.5*raw - 143.
+  ;endif
+
+  ; no longer used
+  ;if keyword_set( megsb_ccd_temp ) then begin
+  ;   return, 34.45*raw - 156.
+  ;endif
+
+  if keyword_set( megsa_ccd_prt_temp ) then begin ; board 003 platinum
+     return, board3_prt[0]*raw + board3_prt[1]
   endif
 
-  if keyword_set( megsb_ccd_temp ) then begin
-     return, 34.45*raw - 156.
+  if keyword_set( megsb_ccd_prt_temp ) then begin ; board 004 platinum
+     return, board4_prt[0]*raw + board4_prt[1]
+  endif
+
+  if keyword_set( megsa_ccd_diode_temp ) then begin ; board 003 diode
+     return, board3_diode[0]*raw + board3_diode[1]
+  endif
+
+  if keyword_set( megsb_ccd_diode_temp ) then begin ; board 004 diode
+     return, board4_diode[0]*raw + board4_diode[1]
   endif
 
   ; should have found something by now
