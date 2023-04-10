@@ -95,6 +95,22 @@ redColor = 'tomato'
 greenColor='lime green'
 fontSize = 16
 
+; Edit here to change axis ranges, titles, locations, etc. 
+textVSpacing = 0.05 ; Vertical spacing
+textHSpacing = 0.02 ; Horizontal spacing
+topLinePosition = 0.90
+
+graphicinfo = {fontColor:fontColor, $
+               backgroundColor:backgroundColor, $
+               boxColor:boxColor, $
+               blueColor:blueColor, $
+               redColor:redColor, $
+               greenColor:greenColor, $
+               fontSize:fontSize, $
+               textVSpacing:textVSpacing, $
+               textHSpacing:textHSpacing, $
+               topLinePosition:topLinePosition }
+
 if keyword_set(test_display_only) then goto, label_create_display
 
 ; Open a port that the DEWESoft computer will be commanded to stream to (see PROCEDURE in this code's header)
@@ -174,10 +190,6 @@ stale_serial = 0
 sdoor_state = 'UNKNOWN'
 
 ; -= CREATE PLACE HOLDER PLOTS =- ;
-; Edit here to change axis ranges, titles, locations, etc. 
-textVSpacing = 0.05 ; Vertical spacing
-textHSpacing = 0.02 ; Horizontal spacing
-topLinePosition = 0.90
 
 ; Monitors
 ; Note that all of the t = below are just static labels so they do not need unique variables
@@ -186,37 +198,13 @@ topLinePosition = 0.90
 ; Displays ESP and MEGS-P diode readouts
 wb = window(DIMENSIONS = [400,750], /NO_TOOLBAR, LOCATION = [0, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'Serial Monitors')
 
-t =         text(0.4, 0.95, 'ESP', FONT_SIZE = fontSize + 6, FONT_COLOR = blueColor)
-t =         text(0.6, topLinePosition, 'ESP FPGA Time = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_time =   text(0.6 + textHSpacing, topLinePosition, '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (1 * textVSpacing), 'Record Counter = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_cnt =    text(0.6 + textHSpacing, topLinePosition - (1 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (2 * textVSpacing), 'Diode 1 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp1 =   text(0.6 + textHSpacing, topLinePosition - (2 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (3 * textVSpacing), 'Diode 2 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp2 =   text(0.6 + textHSpacing, topLinePosition - (3 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (4 * textVSpacing), 'Diode 3 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp3 =   text(0.6 + textHSpacing, topLinePosition - (4 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (5 * textVSpacing), 'Diode 4 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp4 =   text(0.6 + textHSpacing, topLinePosition - (5 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (6 * textVSpacing), 'Diode 5 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp5 =   text(0.6 + textHSpacing, topLinePosition - (6 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (7 * textVSpacing), 'Diode 6 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp6 =   text(0.6 + textHSpacing, topLinePosition - (7 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (8 * textVSpacing), 'Diode 7 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp7 =   text(0.6 + textHSpacing, topLinePosition - (8 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (9 * textVSpacing), 'Diode 8 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp8 =   text(0.6 + textHSpacing, topLinePosition - (9 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (10 * textVSpacing), 'Diode 9 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s3_esp9 =   text(0.6 + textHSpacing, topLinePosition - (10 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.4, topLinePosition - (11 * textVSpacing), 'MEGS-P', FONT_SIZE = fontSize + 6, FONT_COLOR = blueColor)
-t =         text(0.6, topLinePosition-(12 * textVSpacing), 'MEGS-P FPGA Time = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s4_time =   text(0.6 + textHSpacing, topLinePosition-(12 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (13 * textVSpacing), 'Diode 1 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s4_megsp1 = text(0.6 + textHSpacing, topLinePosition - (13 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =         text(0.6, topLinePosition - (14 * textVSpacing), 'Diode 2 = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-s4_megsp2 = text(0.6 + textHSpacing, topLinePosition - (14 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-monitorsSerialRefreshText = text(0.5, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = blueColor, ALIGNMENT = 0.5,font_size=14)
+; initialize tm1 display
+; start with serial3 (ESP) data
+position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
+                                  s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, $
+                                  s4_time, s4_megsp1, s4_megsp2, monitorSerialRefreshText, $
+                                  graphicInfo=graphicInfo
+
 
 ; Analog monitor window
 ; Displays limit checked hk
