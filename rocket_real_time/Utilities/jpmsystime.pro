@@ -29,40 +29,49 @@
 ; MODIFICATION HISTORY:
 ;   2016-09-02: James Paul Mason: Wrote script.
 ;   2016-10-26: James Paul Mason: Added the ISO keyword
-;   2017-02-17: James Paul Mason: Made the UTC keyword also return with a Z at the end rather than the pos/neg local timezone offset
+;   2017-02-17: James Paul Mason: Made the UTC keyword also return
+;   with a Z at the end rather than the pos/neg local timezone offset
+;   2023-04-10 Don Woodraska: Use string functions instead of if
+;   statements that prepend '0', bug fixes in return statements that
+;   were returning assignment statements for iso & utc set, and when
+;   just iso was set, removed capitalization of IDL statements
+;
 ;-
-FUNCTION jpmsystime, ISO = ISO, UTC = UTC
+function jpmsystime, iso=iso, utc=utc
 
 ; Get the current time broken up into components 
-caldat, systime(/JULIAN, UTC = UTC), month, day, year, hour, minute, second
+jd = systime(/julian, utc=utc)
+caldat, jd, month, day, year, hour, minute, second
 
-; Convert to strings
-yyyy = strtrim(year, 2)
-IF month LT 10 THEN mm = '0' + strtrim(month, 2) ELSE mm = strtrim(month, 2)
-IF day LT 10 THEN dd = '0' + strtrim(day, 2) ELSE dd = strtrim(day, 2)
-IF hour LT 10 THEN hh = '0' + strtrim(hour, 2) ELSE hh = strtrim(hour, 2)
-IF minute LT 10 THEN mmin = '0' + strtrim(minute, 2) ELSE mmin = strtrim(minute, 2)
-IF second LT 10 THEN ss = '0' + jpmprintnumber(second, /NO_DECIMALS) ELSE ss = jpmprintnumber(second, /NO_DECIMALS)
+; Convert to fixed length strings
+yyyy = string(year, form='(i04)') ; 4-digits, zero padded
+mm = string(month, form='(i02)') ; 2-digits, zero padded
+dd = string(day, form='(i02)')
+hh = string(hour, form='(i02)')
+mmin = string(minute, form='(i02)')
+ss = string(second, form='(i02)')
 
-IF keyword_set(ISO) THEN timeBreakCharacter = 'T' ELSE timeBreakCharacter = ' '
+if keyword_set(iso) then timeBreakCharacter = 'T' else timeBreakCharacter = ' '
 
 currentTimeHuman = yyyy + '-' + mm + '-' + dd + timeBreakCharacter + hh + ':' + mmin + ':' + ss
 
-IF keyword_set(ISO) THEN BEGIN
-  jdUtc = systime(/JULIAN, /UTC)
-  jdLocal = systime(/JULIAN)
+if keyword_set(iso) then begin
+  jdUtc = systime(/julian, /utc)
+  jdLocal = systime(/julian)
   hourDiff = abs(jdUtc - jdLocal) * 24.
-  IF hourDiff EQ 0 THEN return, currentTimeHuman + 'Z'
-  IF hourDiff LT 10 THEN hhDiff = '0' + jpmprintnumber(hourDiff, /NO_DECIMALS) ELSE hhDiff = strtrim(hourDiff, 2)
-  IF jdLocal GT jdUtc THEN posOrNeg = '+' ELSE posOrNeg = '-'
-  
-  IF keyword_set(UTC) THEN BEGIN
-    return, currentTimeHuman = currentTimeHuman + 'Z'
-  ENDIF
-  
-  return, currentTimeHuman = currentTimeHuman + posOrNeg + hhDiff + ':00' ; Not dealing with timezones that have a minute difference
-ENDIF
+
+  if hourDiff eq 0 then return, currentTimeHuman + 'Z'
+
+  hhDiff = string(hourDiff, form='(i02)')
+  if jdLocal gt jdUtc then posOrNeg = '+' else posOrNeg = '-'
+
+  if keyword_set(UTC) then begin
+    return, currentTimeHuman + 'Z'
+  endif
+
+  return, currentTimeHuman + posOrNeg + hhDiff + ':00' ; Not dealing with timezones that have a minute difference
+endif
 
 return, currentTimeHuman
 
-END
+end
