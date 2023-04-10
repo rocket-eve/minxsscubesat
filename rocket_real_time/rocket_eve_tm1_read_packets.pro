@@ -9,7 +9,7 @@
 ; INPUTS:
 ;   socketData [bytarr]: Data retrieved from an IP socket.
 ;   analogMonitorsStructure: Initialized struct in rocket_eve_tm1_real_time_display that will hold the parsed data
-;   offsets: Array of indicies where the channel stream offsets are located in a Dewesoft packet. Determining these offsets is handled
+;   byteOffsets: Array of indicies where the channel stream offsets are located in a Dewesoft packet. Determining these offsets is handled
 ;            in rocket_eve_tm1_real_time_display
 ;   packetsize: Array of channel data sizes in Dewesoft packet corresponding to its given offset 
 ;   monitorsRefreshText: Struct for the refresh text at the bottom of the analog display windows in rocket_eve_tm1_real_time_display
@@ -31,7 +31,7 @@
 ;   None
 ;
 ; RESTRICTIONS:
-;   Requires JPMsystime.
+;   Requires jpmsystime.
 ;
 ; PROCEDURE:
 ;   TASK 1: Process Analog Telemetry 
@@ -42,7 +42,7 @@
 ;   rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offsets, packetsize, monitorsRefreshText, monitorsSerialRefreshText, stale_a, stale_s, sdoor_state
 ;-
 
-FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offsets, packetsize, monitorsRefreshText, monitorsSerialRefreshText, stale_a, stale_s, sdoor_state, sdoor_history
+FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, byteOffsets, packetsize, monitorsRefreshText, monitorsSerialRefreshText, stale_a, stale_s, sdoor_state, sdoor_history
 
 ;common rocket_eve_tm1_read_packets,sdoor_history
 
@@ -51,7 +51,12 @@ FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offse
 ;conv_factor=[5./1023,5./1023,5./1023*2,0.01,5./1023,5./1023,5./1023,5./1023,5./1023,5./1023,$
 ;             5./1023,5./1023*10,5./1023,5./1023,$
 ;             0.05,0.055,5./1023,5./1023,5./1023,5./1023,1,0.00918]
-;megsp_temp=0,megsa_htr=0,xrs_5v=0,csol_5v=1,slr_pressure=0,cryo_cold=0,megsb_htr=0,xrs_temp=0,megsa_ccd_temp=0,megsb_ccd_temp=1,cryo_hot=1,exprt_28v=1,vac_valve_pos=1,hvs_pressure=1,exprt_15v=1,fpga_5v=1,tv_12v=1,megsa_ff_led=1,megsb_ff_led=1,exprt_bus_cur=0,sdoor_pos=1,exprt_main_28v=0,esp_fpga_time=1,esp_rec_counter=1
+;megsp_temp=0, megsa_htr=0, xrs_5v=0, csol_5v=1, slr_pressure=0,
+;cryo_cold=0, megsb_htr=0, xrs_temp=0, megsa_ccd_temp=0,
+;megsb_ccd_temp=1, cryo_hot=1, exprt_28v=1, vac_valve_pos=1,
+;hvs_pressure=1, exprt_15v=1, fpga_5v=1, tv_12v=1, megsa_ff_led=1,
+;megsb_ff_led=1, exprt_bus_cur=0, sdoor_pos=1, exprt_main_28v=0,
+;esp_fpga_time=1, esp_rec_counter=1
 ;esp1=1,esp2=1,esp3=1,esp4=1
 ;esp5=1,esp6=1,esp7=1,esp8=1
 ;esp9=1,megsp_fpga_time=1,megsp1=1,megsp2=1
@@ -66,37 +71,52 @@ FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offse
 ;             0.05, 0.055, 5./1023, 5./1023, 5./1023, 1, .0049, .01205]
 ;shift=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,.09566,22]
 
-; ===========36.352============
+; ===========36.389============
   default = 5./1023
-  conv_factor=[ default, default, 2*default, default, default, default, default, default, default,$
-                default, 10*default, default, default,$
+  ; uses order of analogMonitorsStructure tags
+  conv_factor=[ default, default, 2*default, $
+                default, default, default, default, $
+                default, default, default, default, $ ; added megsa2 and b2 temps DLW 4/10/23
+                default, 10*default, default, default, $
                 0.05, 0.055, default, default, default, 1, .0049, .01205]
-  shift=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,.09566,22]
+  conv_offset=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,.09566,22]
              
-  channel_num=23                ;We should have 24 offsets in a valid Dewesoft packet. One for each pulled channel
+  channel_num=25  ;We should have 25 offsets in a valid Dewesoft packet. One for each pulled channel
 
-  serial_num=14                 ;Number of serial data points in our monitor structure
-
+  serial_num=14   ;Number of serial data points in our monitor structure
+  ; serial_num is that last part of analogMonitorsStructure and starts
+  ; at esp_fpga_time and goes to the end
+  
   ;If we have a valid Dewesoft packet then parse the packet for each channel
-  if (channel_num eq n_elements(offsets)-1) then begin
+  if (channel_num eq n_elements(byteOffsets)-1) then begin
     ;Change the refresh string and reset our invalid counter now that we found a valid packet
-     monitorsRefreshText.String = 'Last full refresh: ' + JPMsystime()
+     monitorsRefreshText.String = 'Last full refresh: ' + jpmsystime()
      stale_a=0
    
      ;
      ;TASK 1: Process Analog Monitors
      ;
-   
+     
      ;Loop over only the analog monitors in our struct
      for i=0,n_tags(analogMonitorsStructure)-(1+serial_num) do begin
-      ;This is the data for an individual channel
-        var=tag_names(analogMonitorsStructure)
-        packetdata=socketdata[offsets[i]+4:offsets[i]+packetsize[i]*2+4-3]
+     ;for i=0,n_elements(analogMonitorsStructure.ch) - 1 do begin
+        ;This is the data for an individual channel
+        loidx = byteOffsets[i] + 4
+        hiidx = loidx + packetsize[i]*2 - 3 ; drop last 2 bytes? sync marker?
+        packetdata = socketdata[loidx:hiidx]
+        
         ;As analog values are just the same tlm point repeated in the channel data 
-        ;we can grap the first word and say thats our data 
-        tlm=byte2uint(packetdata[n_elements(packetdata)-2:n_elements(packetdata)-1])*conv_factor[i]+shift[i]
+        ;we can grab the last word from the packetdata 
+
+        ; just use last two bytes in packetdata
+        raw = byte2uint(packetdata[-2:-1])
+        voltageValue = raw*conv_factor[i] + conv_offset[i]
+        
         ;Store it to our struct
-        analogMonitorsStructure.(i)=tlm 
+        analogMonitorsStructure.(i) = voltageValue 
+
+        ;analogMonitorsStructure[i].raw = raw
+        ;analogMonitorsStructure[i].voltage = voltagevalue
      endfor
    
      ;Shutter door logic
@@ -115,8 +135,11 @@ FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offse
      esp_ref=0                  ;ESP refresh variable. This gets set to 1 if we find ESP data in the channel and are able to pull out all the monitors
    
      ;Grab the second to last channel data in the Dewesoft packet which is esp
-     packetdata_esp=socketdata[offsets[n_elements(offsets)-3]+4:offsets[n_elements(offsets)-3]+packetsize[n_elements(offsets)-3]*2-1]
-   
+     ;packetdata_esp=socketdata[byteOffsets[n_elements(byteOffsets)-3]+4:byteOffsets[n_elements(byteOffsets)-3]+packetsize[n_elements(byteOffsets)-3]*2-1]
+
+     numB3 = n_elements(byteOffsets) - 3
+     packetdata_esp=socketdata[byteOffsets[numB3] + 4 : byteOffsets[numB3] + packetsize[numB3]*2 - 1]
+
      ;
      ;TASK 2: Process ESP Serial Data
      ;
@@ -173,7 +196,7 @@ FUNCTION rocket_eve_tm1_read_packets, socketData, analogMonitorsStructure, offse
    
      ;Only if we have refreshed ESP and MEGSP data can we update the full refresh string for the serial monitors window
      if ((megs_ref ne 0) and (esp_ref ne 0)) then begin
-        monitorsSerialRefreshText.String = 'Last full refresh: ' + JPMsystime()
+        monitorsSerialRefreshText.String = 'Last full refresh: ' + jpmsystime()
         stale_s=0               ;reset the invalid serial data counter
      endif else stale_s=stale_s+1 ;If we didn't get one of the serial monitors to refresh then increment the invalid serial packet counter
      
