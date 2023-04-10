@@ -90,15 +90,17 @@ function read_altair_ch_descriptions, filename
   ; define one structure that has all the fields that are needed
   rec = {ch:-1L, $
          description:'', $
-         ach:'', $
-         varname:'', $
+         ach:'', $ ; analog channel from the first part of descriptions
+         varname:'', $ ; the rest of description
          tmdescription:'', $
          tmlabel:'', $
-         conv_factor:0.0, $
-         conv_offset:0.0, $
+         conv_factor:1.0, $ ; default is multi by 1
+         conv_offset:0.0, $ ; default is add 0
          raw:0L, $
-         floatvalue:0., $
-         statevalue:'' $
+         voltage:0., $
+         convertedvalue:0., $
+         statevalue:'', $
+         isanalog:0 $ ; =0 for esp and megsp serial data, =1 for analog decks
         }
   
   result = replicate(rec, n_lines)
