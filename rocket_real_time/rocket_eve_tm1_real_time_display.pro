@@ -109,7 +109,7 @@ openw, file_lun, getenv('HOME') + '/Dropbox/minxss_dropbox/data/reve_36_389/tm1_
 
 ; TODO: these names are here and in the analogMonitorsStructure definition, just need one definition
 printf,file_lun,'Time, megsp_temp, megsa_htr, xrs_5v, slr_pressure, '+$
-                'cryo_cold, megsb_htr, xrs_temp, megsa_ccd_temp, megsb_ccd_temp, cryo_hot, exprt_28v, '+$
+                'cryo_cold, megsb_htr, xrs_temp, megsa_ccd_temp1, megsb_ccd_temp1,megsa_ccd_temp2, megsb_ccd_temp2, cryo_hot, exprt_28v, '+$
                 'vac_valve_pos, hvs_pressure, exprt_15v, fpga_5v, tv_12v, megsa_ff_led, megsb_ff_led, '+$
                 'sdoor_pos, exprt_bus_cur, tm_exp_batt_volt, esp_fpga_time, esp_rec_counter, esp1, esp2, esp3, esp4, '+$
                 'esp5, esp6, esp7, esp8, esp9, megsp_fpga_time, megsp1, megsp2'
@@ -137,43 +137,20 @@ socketDataBuffer = !NULL
 ;esp9=1,megsp_fpga_time=1,megsp1=1,megsp2=1
 
 ;36.353
-synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; 35 items
+;synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; 35 items
 ;megsp_temp=0,megsa_htr=0,**xrs_5v=0,slr_pressure=0,cryo_cold=0,megsb_htr=0,xrs_temp=0,megsa_ccd_temp=0,megsb_ccd_temp=1,cryo_hot=1,**exprt_28v=1,vac_valve_pos=1,hvs_pressure=1,**exprt_15v=1,**fpga_5v=1,tv_12v=1,megsa_ff_led=1,megsb_ff_led=1,**sdoor_pos=1,exprt_bus_cur=0,tm_exp_batt_volt=0,esp_fpga_time=1,esp_rec_counter=1
 ;esp1=1,esp2=1,esp3=1,esp4=1,esp5=1,esp6=1,esp7=1,esp8=1,esp9=1,
 ;megsp_fpga_time=1,megsp1=1,megsp2=1
-; Arrays for thermal conversions for 36.336 monitors
-; TODO: move the thermal conversions to a different function call
-;woods5 = [0.00147408,0.00023701459,1.0839894e-7]
-;woods6 = [0.0014051,0.0002369,1.019e-7]
-;woods7 = [0.001288,0.0002356,9.557e-8]
-;woods8 = [0.077,0.1037,0.0256]
-;woods11 = [15.0,11.75,5.797]
-;woods14 = [15.0,12.22,5.881]
-;woods15 = [15.0,11.71,5.816]
-;woods17 = [257.122,-257.199]
 
 ;36.389
 synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; Index which channels are synchronous (0) or async (1) corresponding to channel order pulled
-;megsp_temp=0, megsa_htr=0, xrs_5v=0, slr_pressure=0, cryo_cold=0, megsb_htr=0, xrs_temp=0, megsa_ccd_temp=0, megsb_ccd_temp=1, cryo_hot=1,
-;exprt_28v=1, vac_valve_pos=1, hvs_pressure=1, exprt_15v=1, fpga_5v=1, tv_12v=1, megsa_ff_led=1, megsb_ff_led=1,
-;sdoor_pos=1, exprt_bus_cur=0, tm_exp_batt_volt=0,
-;esp_fpga_time=1, esp_rec_counter=1, esp1=1, esp2=1, esp3=1, esp4=1, esp5=1, esp6=1, esp7=1, esp8=1, esp9=1,
-;megsp_fpga_time=1, megsp1=1, megsp2=1
+;-- megsp_temp=0, megsa_htr=0, xrs_5v=0, slr_pressure=0, cryo_cold=0, megsb_htr=0, xrs_temp=0, megsa_ccd_temp=0, megsb_ccd_temp=1, cryo_hot=1,
+;-- exprt_28v=1, vac_valve_pos=1, hvs_pressure=1, exprt_15v=1, fpga_5v=1, tv_12v=1, megsa_ff_led=1, megsb_ff_led=1,
+;-- sdoor_pos=1, exprt_bus_cur=0, tm_exp_batt_volt=0,
+;-- esp_fpga_time=1, esp_rec_counter=1, esp1=1, esp2=1, esp3=1, esp4=1, esp5=1, esp6=1, esp7=1, esp8=1, esp9=1,
+;-- megsp_fpga_time=1, megsp1=1, megsp2=1
 
-
-;esp_d1 = []
-;esp_d2 = []
-;esp_d3 = []
-;esp_d4 = []
-;esp_d5 = []
-;esp_d6 = []
-;esp_d7 = []
-;esp_d8 = []
-;esp_d9 = []
-
-;megsp_d1 = []
-;megsp_d2 = []
-
+; door history
 sdoor_history=lonarr(10)
 
 label_create_display:
@@ -181,12 +158,22 @@ label_create_display:
 ; Initialize monitor structure
 analogMonitorsStructure = {megsp_temp: 0.0, megsa_htr: 0.0, xrs_5v:0.0,$
   slr_pressure:0.0,cryo_cold:0.0,megsb_htr:0.0,xrs_temp:0.0,$
-  megsa_ccd_temp:0.0,megsb_ccd_temp:0.0,cryo_hot:0.0,exprt_28v:0.0,$
+  megsa_ccd_temp1:0.0,megsb_ccd_temp1:0.0, megsa_ccd_temp2:0.0,megsb_ccd_temp2:0.0, $
+  ; added megsa2 & b2 temps 4/10/23 DLW
+  cryo_hot:0.0,exprt_28v:0.0,$
   vac_valve_pos:0.0,hvs_pressure:0.0,exprt_15v:0.0,fpga_5v:0.0,$
   tv_12v:0.0,megsa_ff_led:0.0,megsb_ff_led:0.0,sdoor_pos:0.0,$
-  exprt_bus_cur:0.0,tm_exp_batt_volt:0.0,esp_fpga_time:0.0,esp_rec_counter:0.0,$
+  exprt_bus_cur:0.0,tm_exp_batt_volt:0.0, $
+  ; serial data starts here
+  esp_fpga_time:0.0,esp_rec_counter:0.0,$
   esp1:0.0,esp2:0.0,esp3:0.0,esp4:0.0,esp5:0.0,esp6:0.0,esp7:0.0,esp8:0.0,esp9:0.0,$
   megsp_fpga_time:0.0,megsp1:0.0,megsp2:0.0}
+; the order of the analogMonitorsStructure corresponds to the data
+; order defined in rocket_tm1_start.scpt
+; for the first part, the last part is serial data broken out of
+; stream s2 (ESPSerialStream) and s3 (MEGSPSerialStream)
+
+defAnalogMonitorStructure = define_analog_monitor_structure()
 
 ; Initialize invalid Dewesoft packet counters
 stale_analog = 0
@@ -274,21 +261,21 @@ t =     text(0.8, topLinePosition, 'MEGS A Heater = ', ALIGNMENT = 1.0, FONT_SIZ
 ta3 =   text(0.8 + textHSpacing, topLinePosition, '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 t =     text(0.8, topLinePosition - (1 * textVSpacing), 'MEGS B Heater = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta15 =  text(0.8 + textHSpacing, topLinePosition - (1 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (2 * textVSpacing), 'MEGS A CCD PRT Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+t =     text(0.8, topLinePosition - (2 * textVSpacing), 'MEGS A CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta19 =  text(0.8 + textHSpacing, topLinePosition - (2 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (3 * textVSpacing), 'MEGS B CCD PRT Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+t =     text(0.8, topLinePosition - (3 * textVSpacing), 'MEGS B CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta20 =  text(0.8 + textHSpacing, topLinePosition - (3 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 
-t =     text(0.8, topLinePosition - (4 * textVSpacing), 'MEGS A CCD Diode Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+t =     text(0.8, topLinePosition - (4 * textVSpacing), 'MEGS A CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta19b=  text(0.8 + textHSpacing, topLinePosition - (4 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (5 * textVSpacing), 'MEGS B CCD Diode Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+t =     text(0.8, topLinePosition - (5 * textVSpacing), 'MEGS B CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta20b=  text(0.8 + textHSpacing, topLinePosition - (5 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 
 t =     text(0.8, topLinePosition - (7 * textVSpacing), 'MEGS A FF Lamp = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta31 =  text(0.8 + textHSpacing, topLinePosition - (7 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 t =     text(0.8, topLinePosition - (8 * textVSpacing), 'MEGS B FF Lamp = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta32 =  text(0.8 + textHSpacing, topLinePosition - (8 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (10 * textVSpacing), 'MEGS-P Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+t =     text(0.8, topLinePosition - (10 * textVSpacing), 'MEGS-P Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 ta1 =   text(0.8 + textHSpacing, topLinePosition - (10 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
 
 monitorsRefreshText = text(0.5, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = blueColor, ALIGNMENT = 0.5,font_size=14)
@@ -339,14 +326,6 @@ WHILE 1 DO BEGIN
     sync7Indices = where(socketDataBuffer EQ 7, numSync7s)
     
     ; Find all start syncs
-;    wStartSync = where(socketDataBuffer EQ 7 AND $
-;                 shift(socketDataBuffer, 1) EQ 6 AND $
-;                 shift(socketDataBuffer, 2) EQ 5 AND $
-;                 shift(socketDataBuffer, 3) EQ 4 AND $
-;                 shift(socketDataBuff.reset_session
-;                 ffer, 6) EQ 1 AND $
-;                 shift(socketDataBuffer, 7) EQ 0, nsync)
-
     wStartSync = where(socketDataBuffer EQ 0 AND $
       shift(socketDataBuffer, -1) EQ 1 AND $
       shift(socketDataBuffer, -2) EQ 2 AND $
@@ -367,12 +346,11 @@ WHILE 1 DO BEGIN
     wStopSync = wStartSync[1:*] - 15 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
     
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
-    ;wStartSync -= 7
     
     ; Read packet type and if it's not our data (type 0) then ... something
     packetType = byte2ulong(socketDataBuffer[wStartSync[-2]+12:wStartSync[-2]+12+3])
     IF packetType NE 0 THEN BEGIN
-      message, /INFO, 'You should not have come here. The data packet type is not right and code is going to break.'
+      message, /INFO, 'ERROR: PackerType is incorrect - fatal - cannot continue :'+strtrim(packetType,2)
       STOP
     ENDIF
     
@@ -389,36 +367,6 @@ WHILE 1 DO BEGIN
       ;verifiedSync7Index = !NULL
       verifiedSync7Index = wStartSync[1]
       
-      
-;      FOR sync7LoopIndex = 0, numSync7s - 1 DO BEGIN
-;        
-;        ; Verify the rest of the sync pattern
-;        IF sync7Indices[0] LT 7 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 1] NE 6 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 2] NE 5 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 3] NE 4 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 4] NE 3 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 5] NE 2 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 6] NE 1 THEN CONTINUE
-;        IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 7] NE 0 THEN CONTINUE
-;        
-;        ; If this is the first syncLoopIndex, THEN verify this sync pattern and continue to the next sync pattern to determine 
-;        ; the data to process (singleFullDeweSoftPacket) between the two sync patterns
-;        IF sync7LoopIndex EQ 0 THEN BEGIN
-;          verifiedSync7Index = sync7Indices[sync7LoopIndex]
-;          CONTINUE
-;        ENDIF
-;        
-;        ; Store the data to be processed between two DEWESoft sync patterns
-;        singleFullDeweSoftPacket = socketDataBuffer[verifiedSync7Index - 7:sync7Indices[sync7LoopIndex] - 8]
-;        
-;        ; Check if packet type is 0 (i.e. a data packet) ELSE skip
-;        packetType = byte2ulong(singleFullDeweSoftPacket[12:12+3])
-;        IF packetType NE 0 THEN BEGIN
-;          IF keyword_set(debug) THEN print, "Skipping as datatype is ", packetType
-;          verifiedSync7Index = sync7Indices[sync7LoopIndex]
-;          CONTINUE
-;        ENDIF
         
         
         ; -= PROCESS DATA =- ;
@@ -436,7 +384,7 @@ WHILE 1 DO BEGIN
           ENDIF ELSE BEGIN
             IF synctype[i-1] EQ 0 THEN BEGIN
               sampleSizeDeweSoft = 2 ; This is the multiplication factor for synchronus data to get the data channel size
-            ENDIF ELSE BEGIN
+            ENDIF ELSE BEGIN ; in 36.389 everything is asynchronous
               sampleSizeDeweSoft = 10 ; This is the multiplication factor for asynchronus data to get the data channel size
             ENDELSE
             IF samplesize[i-1] EQ 0 THEN BREAK ; Handle when dewesoft pads packets for some reason and we can no longer get the correct offsets
@@ -456,30 +404,23 @@ WHILE 1 DO BEGIN
         if dewesoftcounter gt frequencyOfImageDisplay then begin
 
           ; Convert voltages to temperature for the 36.336 flight
-          ;R_therm_MEGSP = woods14[1]/((woods14[0]/(analogMonitors.megsp_temp))-(woods14[1]/woods14[2])-1)*1000
-          ;t_MEGSP = 1/(woods7[0]+woods7[1]*alog(R_therm_MEGSP)+woods7[2]*((alog(R_therm_MEGSP))^3))-273.15
-          ;R_therm_XRS1 = woods15[1]/((woods15[0]/(analogMonitors.xrs_temp))-(woods15[1]/woods15[2])-1)*1000
-          ;t_XRS1 = 1/(woods6[0]+woods6[1]*alog(R_therm_XRS1)+woods6[2]*((alog(R_therm_XRS1))^3))-273.15
-          ;R_therm_Cryo_Hotside = woods11[1]/((woods11[0]/(analogMonitors.cryo_hot))-(woods11[1]/woods11[2])-1)*1000
-          ;t_Cryo_Hotside = 1/(woods5[0]+woods5[1]*alog(R_therm_Cryo_Hotside)+woods5[2]*((alog(R_therm_Cryo_Hotside))^3))-273.15
-          ;v_convert_ = woods8[2]*(analogMonitors.cryo_cold)^2+woods8[1]*(analogMonitors.cryo_cold)+woods8[0]
-          ;t_Cold_Finger = woods17[0]*v_convert_+woods17[1]
-          ;megsa_ccd = 34.5*analogMonitors.megsa_ccd_temp-143
-          ;megsb_ccd = 34.45*analogMonitors.megsb_ccd_temp-156
 
           ; 36.389 uses convert_temperatures function
+          ; analogMonitors contains voltages
           t_MEGSP = convert_temperatures( analogMonitors.megsp_temp, /megsp_temp )
           t_XRS1 = convert_temperatures( analogMonitors.xrs_temp, /xrs_temp )
           t_Cryo_Hotside = convert_temperatures( analogMonitors.cryo_hot, /cryo_hot )
           t_Cold_Finger = convert_temperatures( analogMonitors.cryo_cold, /cryo_cold )
-          megsa_ccd = convert_temperatures( analoMonitors.megsa_ccd_temp, /megsa_ccd )
-          megsb_ccd = convert_temperatures( analoMonitors.megsb_ccd_temp, /megsa_ccd )
+          megsa_ccd_prt = convert_temperatures( analoMonitors.megsa_ccd_temp1, /megsa_ccd_prt )
+          megsb_ccd_prt = convert_temperatures( analoMonitors.megsb_ccd_temp1, /megsb_ccd_prt )
+          megsa_ccd_diode = convert_temperatures( analoMonitors.megsa_ccd_temp2, /megsa_ccd_diode )
+          megsb_ccd_diode = convert_temperatures( analoMonitors.megsb_ccd_temp2, /megsb_ccd_diode )
           
           ; Write data to file if its new
           IF stale_analog EQ 0 THEN BEGIN
             printf, file_lun, string(systime(/julian),format='(F32.16)')+', '+jpmprintnumber(analogMonitors.megsp_temp)+', '+jpmprintnumber(analogMonitors.megsa_htr)+', '+jpmprintnumber(analogMonitors.xrs_5v)+$
                              ', '+jpmprintnumber(analogMonitors.slr_pressure)+', '+jpmprintnumber(analogMonitors.cryo_cold)+', '+jpmprintnumber(analogMonitors.megsb_htr)+$
-                             ', '+jpmprintnumber(analogMonitors.xrs_temp)+', '+jpmprintnumber(analogMonitors.megsa_ccd_temp)+', '+jpmprintnumber(analogMonitors.megsb_ccd_temp)+', '+jpmprintnumber(analogMonitors.cryo_hot)+$
+                             ', '+jpmprintnumber(analogMonitors.xrs_temp)+', '+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+', '+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+', '+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+', '+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+', '+jpmprintnumber(analogMonitors.cryo_hot)+$
                              ', '+jpmprintnumber(analogMonitors.exprt_28v)+', '+jpmprintnumber(analogMonitors.vac_valve_pos)+', '+jpmprintnumber(analogMonitors.hvs_pressure)+', '+jpmprintnumber(analogMonitors.exprt_15v)+$
                              ', '+jpmprintnumber(analogMonitors.fpga_5v)+', '+jpmprintnumber(analogMonitors.tv_12v)+', '+jpmprintnumber(analogMonitors.megsa_ff_led)+', '+jpmprintnumber(analogMonitors.megsb_ff_led)+', '+jpmprintnumber(analogMonitors.sdoor_pos)+$
                              ', '+jpmprintnumber(analogMonitors.exprt_bus_cur)+', '+jpmprintnumber(analogMonitors.tm_exp_batt_volt)+', '+jpmprintnumber(analogMonitors.esp_fpga_time)+', '+jpmprintnumber(analogMonitors.esp_rec_counter)+$
@@ -534,10 +475,10 @@ WHILE 1 DO BEGIN
           ta14.string = jpmprintnumber(t_Cold_Finger)
           ta29.string = jpmprintnumber(analogMonitors.fpga_5v)
           ta30.string = jpmprintnumber(analogMonitors.tv_12v)
-          ta19.string = jpmprintnumber(megsa_ccd)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp)+")"
-          ta20.string = jpmprintnumber(megsb_ccd)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp)+")"
-          ta19b.string = jpmprintnumber(megsa_ccd)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp)+")"
-          ta20b.string = jpmprintnumber(megsb_ccd)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp)+")"
+          ta19.string = jpmprintnumber(megsa_ccd_prt)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+")"
+          ta20.string = jpmprintnumber(megsb_ccd_prt)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+")"
+          ta19b.string = jpmprintnumber(megsa_ccd_diode)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+")"
+          ta20b.string = jpmprintnumber(megsb_ccd_diode)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+")"
           ta1.string = jpmprintnumber(t_MEGSP)
           ta26.string = jpmprintnumber(analogMonitors.hvs_pressure)
           ta22.string = jpmprintnumber(t_Cryo_Hotside)
@@ -586,8 +527,10 @@ WHILE 1 DO BEGIN
             get_color_limit, ta29, analogMonitors.fpga_5v, rl=4.5, rh=5.5
             get_color_limit, ta3, analogMonitors.megsa_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, ta15, analogMonitors.megsb_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
-            get_color_limit, ta19, analogMonitors.megsa_ccd_temp, rl=0, rh=3, green_string=megsa_ccd, red_string=megsa_ccd
-            get_color_limit, ta20, analogMonitors.megsb_ccd_temp, rl=0, rh=3, green_string=megsb_ccd, red_string=megsb_ccd
+            get_color_limit, ta19, analogMonitors.megsa_ccd_temp1, rl=0, rh=3, green_string=megsa_ccd_prt, red_string=megsa_ccd_prt
+            get_color_limit, ta20, analogMonitors.megsb_ccd_temp1, rl=0, rh=3, green_string=megsb_ccd_prt, red_string=megsb_ccd_prt
+            get_color_limit, ta19b, analogMonitors.megsa_ccd_temp2, rl=0, rh=3, green_string=megsa_ccd_diode, red_string=megsa_ccd_diode
+            get_color_limit, ta20b, analogMonitors.megsb_ccd_temp2, rl=0, rh=3, green_string=megsb_ccd_diode, red_string=megsb_ccd_diode
             get_color_limit, ta31, analogMonitors.megsa_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, ta32, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
 
@@ -608,19 +551,9 @@ WHILE 1 DO BEGIN
             
           !Except = 1 ; Re-enable math error logging
           
-          ; Set the index of this verified sync pattern for use in the next iteration of the DEWESoft sync7Loop
-          ;verifiedSync7Index = sync7Indices[sync7LoopIndex]
-          
           dewesoftcounter = 0L ; reset
         ENDIF ; If dewesoftcounter > frequencyOfImageDisplay
 
-      ;ENDFOR ; sync7LoopIndex = 0, numSync7s - 1
-      
-      ; Now that all processable data has been processed, overwrite the buffer to contain only bytes from the beginning of 
-      ; last sync pattern to the end of socketDataBuffer
-      ;socketDataBuffer = socketDataBuffer[verifiedSync7Index - 7:-1]
-      ;IF n_elements(socketDataBuffer) GT 1e5 THEN BEGIN  
-        
         
         ; Loop to find the full sync and throw out the unncessarily fast samples
         wStartSync = where(socketDataBuffer[sync7Indices] EQ 7 AND $
@@ -634,7 +567,6 @@ WHILE 1 DO BEGIN
           lastStartSync = wStartSync[-1]
           socketDataBuffer = socketDataBuffer[ sync7Indices[lastStartSync]-7:-1 ]
         ENDIF
-      ;ENDIF
       
     ENDIF ; IF numSync7s GE 2
   ENDIF ;ELSE IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' Socket connected but 0 bytes on socket.' ; If socketDataSize GT 0
