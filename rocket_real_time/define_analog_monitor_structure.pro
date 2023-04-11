@@ -116,7 +116,7 @@ function insert_analog_conversions, dewesoft
   ;
   new = populate_analog_tmconv( new, 'XRS_5V_Raw', 2.*tenbit_to_5v, 0. )
 
-  new = populate_analog_tmconv( new, 'BUS+28V_Raw', 10.*tenbit_to_5v, 0. )
+  new = populate_analog_tmconv( new, 'BUS_28V_Raw', 10.*tenbit_to_5v, 0. )
 
   new = populate_analog_tmconv( new, 'EXP_15V_Raw', 0.05, 0. )
 

@@ -129,6 +129,11 @@ function read_altair_ch_descriptions, filename
   endfor
   free_lun,lun
 
+  ; replace bac chars in varnames
+  ; enforece varname as a valid IDL variable name: no minus, no plus chars
+  result.varname = (result.varname).replace('+','_')
+  result.varname = (result.varname).replace('-','neg')
+  
   ; trim off the unused elements
 
   good = where(result.ch gt -1 and result.ach ne '', n_good)
