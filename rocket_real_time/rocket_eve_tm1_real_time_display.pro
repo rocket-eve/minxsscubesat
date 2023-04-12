@@ -208,7 +208,7 @@ position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
 
 ; Analog monitor window
 ; Displays limit checked hk
-wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.336 Analog Monitors')
+wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
 
 position_tm1_analog_on_window, ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, $
                                ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, $
