@@ -1,3 +1,13 @@
+;+
+;
+; This procedure populates the active window with a collection of string objects.
+; The string objects created here are in the argument list and can be used by the
+; caller.
+;
+; Placement is controlled through a set of variable passed into the graphicInfo structure.
+;
+; DLW 04/12/23 Created
+;-
 pro position_tm1_analog_on_window, ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, $
                                    ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, $
                                    monitorsRefreshText, $

@@ -1,3 +1,13 @@
+;+
+;
+; This procedure populates the active window with a collection of string objects.
+; The string objects created here are in the argument list and can be used by the
+; caller.
+; 
+; Placement is controlled through a set of variable passed into the graphicInfo structure.
+;
+; DLW 04/12/23 Created
+;-
 pro position_tm1_esp_megsp_on_window, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, $
   s4_time, s4_megsp1, s4_megsp2, $
   monitorsSerialRefreshText, graphicInfo=graphicInfo
