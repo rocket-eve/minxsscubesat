@@ -210,57 +210,10 @@ position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
 ; Displays limit checked hk
 wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.336 Analog Monitors')
 
-; Left column
-t =     text(0.25, 0.95, 'Payload', FONT_SIZE = fontSize + 6, FONT_COLOR = blueColor)
-t =     text(0.35, topLinePosition, 'Exp +28V Monitor = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta23 =  text(0.35 + textHSpacing, topLinePosition, '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-
-t =     text(0.35, topLinePosition - (1 * textVSpacing), 'TM Exp Batt Volt [V] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta124 = text(0.35 + textHSpacing, topLinePosition - (1 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (2 * textVSpacing), 'TM Exp Bus Curr [A] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta106 = text(0.35 + textHSpacing, topLinePosition - (2 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (4 * textVSpacing), 'Shutter Door = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta82 =  text(0.35 + textHSpacing, topLinePosition - (4 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (5 * textVSpacing), 'Vac Valve Position = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta25 =  text(0.35 + textHSpacing, topLinePosition - (5 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (6 * textVSpacing), 'HVS Pressure = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta26 =  text(0.35 + textHSpacing, topLinePosition - (6 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (7 * textVSpacing), 'Solar Section Pressure = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta13 =  text(0.35 + textHSpacing, topLinePosition - (7 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (9 * textVSpacing), 'Cryo Cold Finger Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta14 =  text(0.35 + textHSpacing, topLinePosition - (9 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (10 * textVSpacing), 'Cryo Hot Side Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta22 =  text(0.35 + textHSpacing, topLinePosition - (10 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (12 * textVSpacing), 'FPGA +5V Monitor [V] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta29 =  text(0.35 + textHSpacing, topLinePosition - (12 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.35, topLinePosition - (13 * textVSpacing), 'Camera Charger [V] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta30 =  text(0.35 + textHSpacing, topLinePosition - (13 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-
-; Right column
-t =     text(0.75, 0.95, 'MEGS', FONT_SIZE = fontSize + 6, FONT_COLOR = blueColor)
-t =     text(0.8, topLinePosition, 'MEGS A Heater = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta3 =   text(0.8 + textHSpacing, topLinePosition, '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (1 * textVSpacing), 'MEGS B Heater = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta15 =  text(0.8 + textHSpacing, topLinePosition - (1 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (2 * textVSpacing), 'MEGS A CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta19 =  text(0.8 + textHSpacing, topLinePosition - (2 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (3 * textVSpacing), 'MEGS B CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta20 =  text(0.8 + textHSpacing, topLinePosition - (3 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-
-t =     text(0.8, topLinePosition - (4 * textVSpacing), 'MEGS A CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta19b=  text(0.8 + textHSpacing, topLinePosition - (4 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (5 * textVSpacing), 'MEGS B CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta20b=  text(0.8 + textHSpacing, topLinePosition - (5 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-
-t =     text(0.8, topLinePosition - (7 * textVSpacing), 'MEGS A FF Lamp = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta31 =  text(0.8 + textHSpacing, topLinePosition - (7 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (8 * textVSpacing), 'MEGS B FF Lamp = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta32 =  text(0.8 + textHSpacing, topLinePosition - (8 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-t =     text(0.8, topLinePosition - (10 * textVSpacing), 'MEGS-P Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-ta1 =   text(0.8 + textHSpacing, topLinePosition - (10 * textVSpacing), '--', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-
-monitorsRefreshText = text(0.5, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = blueColor, ALIGNMENT = 0.5,font_size=14)
-
+position_tm1_analog_on_window, ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, $
+                               ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, $
+                               monitorsRefreshText, $
+                               graphicInfo=graphicInfo
 
 serialTextObjArray = [monitorsSerialRefreshText, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2]
 
