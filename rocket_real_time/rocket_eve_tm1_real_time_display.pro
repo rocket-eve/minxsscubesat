@@ -71,7 +71,8 @@
 ;   2018-05-29: Robert Henry Alexander Sewell: Updated for 36.336 launch
 ;   2021: Don Woodraska and James Mason: Updated for 36.353- added frequencyOfImageDisplay keyword to allow code to keep up
 ;   2023-03-10: Don Woodraska Updated for 36.389, calling convert_temeperatures
-;   2023-03-30 Don Woodraska Added test_display_only keyword to allow repositioning items on the displays
+;   2023-03-30: Don Woodraska Added test_display_only keyword to allow repositioning items on the displays
+;   2023-04-12: Don Woodraska Cleanup, removed commented code, refactored to remove altair channels in variable names
 ;
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
@@ -180,7 +181,7 @@ analogMonitorsStructure = {megsp_temp: 0.0, megsa_htr: 0.0, xrs_5v:0.0,$
 ; the order of the analogMonitorsStructure corresponds to the data
 ; order defined in rocket_tm1_start.scpt
 ; for the first part, the last part is serial data broken out of
-; stream s2 (ESPSerialStream) and s3 (MEGSPSerialStream)
+; stream s2 (ESPSerialStream) and s3 (MEGSPSerialStream) in 36.389
 
 defAnalogMonitorStructure = define_analog_monitor_structure()
 
@@ -447,7 +448,7 @@ WHILE 1 DO BEGIN
             print,'window write time = '+strtrim(toc(wtime),2)
           ENDIF
             
-          !Except = 1 ; Re-enable math error logging
+          ;!Except = 1 ; Re-enable math error logging
           
           dewesoftcounter = 0L ; reset
         ENDIF ; If dewesoftcounter > frequencyOfImageDisplay

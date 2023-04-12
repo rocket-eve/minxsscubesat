@@ -30,9 +30,9 @@ t =     text(0.35, graphicInfo.topLinePosition - (6 * graphicInfo.textVSpacing),
 ta26 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (6 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 t =     text(0.35, graphicInfo.topLinePosition - (7 * graphicInfo.textVSpacing), 'Solar Section Pressure = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta13 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (7 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.35, graphicInfo.topLinePosition - (9 * graphicInfo.textVSpacing), 'Cryo Cold Finger Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.35, graphicInfo.topLinePosition - (9 * graphicInfo.textVSpacing), 'Cryo Cold Finger Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta14 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (9 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.35, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), 'Cryo Hot Side Temp [ºC] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.35, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), 'Cryo Hot Side Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta22 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 t =     text(0.35, graphicInfo.topLinePosition - (12 * graphicInfo.textVSpacing), 'FPGA +5V Monitor [V] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta29 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (12 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
@@ -62,7 +62,7 @@ ta32 =  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (8 * 
 t =     text(0.8, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), 'MEGS-P Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta1 =   text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
-monitorsRefreshText = text(0.5, 0.0, 'Last full refresh: ' + jpmsystime(), COLOR = graphicInfo.blueColor, ALIGNMENT = 0.5,font_size=14)
+monitorsRefreshText = text(0.5, 0.01, 'Last full refresh: ' + jpmsystime(), COLOR = graphicInfo.blueColor, ALIGNMENT = 0.5,font_size=14)
 
 return
 end

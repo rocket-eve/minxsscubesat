@@ -45,7 +45,7 @@ pro position_tm1_esp_megsp_on_window, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3
   t =         text(0.6, graphicInfo.topLinePosition - (14 * graphicInfo.textVSpacing), 'Diode 2 = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
   s4_megsp2 = text(0.6 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (14 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
-  monitorsSerialRefreshText = text(0.5, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = graphicInfo.blueColor, ALIGNMENT = 0.5,font_size=14)
+  monitorsSerialRefreshText = text(0.5, 0.01, 'Last full refresh: ' + JPMsystime(), COLOR = graphicInfo.blueColor, ALIGNMENT = 0.5,font_size=14)
 
   return
 end
