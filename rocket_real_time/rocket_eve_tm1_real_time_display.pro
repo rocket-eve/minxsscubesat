@@ -210,14 +210,14 @@ position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
 ; Displays limit checked hk
 wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
 
-position_tm1_analog_on_window, ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, $
-                               ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, $
+position_tm1_analog_on_window, t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
+                               ta3, ta15, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, ta31, ta32, t_MEGSP_temp, $
                                monitorsRefreshText, $
                                graphicInfo=graphicInfo
 
 serialTextObjArray = [monitorsSerialRefreshText, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2]
 
-analogTextObjArray = [ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, monitorsRefreshText]
+analogTextObjArray = [t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, ta3, ta15, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, ta31, ta32, t_MEGSP_temp, monitorsRefreshText]
 
 if keyword_set(test_display_only) then stop
 
@@ -340,14 +340,15 @@ WHILE 1 DO BEGIN
 
           ; 36.389 uses convert_temperatures function
           ; analogMonitors contains voltages
-          t_MEGSP = convert_temperatures( analogMonitors.megsp_temp, /megsp_temp )
-          t_XRS1 = convert_temperatures( analogMonitors.xrs_temp, /xrs_temp )
-          t_Cryo_Hotside = convert_temperatures( analogMonitors.cryo_hot, /cryo_hot )
-          t_Cold_Finger = convert_temperatures( analogMonitors.cryo_cold, /cryo_cold )
-          megsa_ccd_prt = convert_temperatures( analogMonitors.megsa_ccd_temp1, /megsa_ccd_prt )
-          megsb_ccd_prt = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_prt )
-          megsa_ccd_diode = convert_temperatures( analogMonitors.megsa_ccd_temp2, /megsa_ccd_diode )
-          megsb_ccd_diode = convert_temperatures( analogMonitors.megsb_ccd_temp2, /megsb_ccd_diode )
+          ; temperatures end in _temp
+          MEGSP_temp = convert_temperatures( analogMonitors.megsp_temp, /megsp_temp )
+          XRS1_temp = convert_temperatures( analogMonitors.xrs_temp, /xrs_temp ) ; NOT USED?
+          Cryo_Hotside_temp = convert_temperatures( analogMonitors.cryo_hot, /cryo_hot )
+          cryo_coldside_temp = convert_temperatures( analogMonitors.cryo_cold, /cryo_cold )
+          megsa_ccd_prt_temp = convert_temperatures( analogMonitors.megsa_ccd_temp1, /megsa_ccd_prt )
+          megsb_ccd_prt_temp = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_prt )
+          megsa_ccd_diode_temp = convert_temperatures( analogMonitors.megsa_ccd_temp2, /megsa_ccd_diode )
+          megsb_ccd_diode_temp = convert_temperatures( analogMonitors.megsb_ccd_temp2, /megsb_ccd_diode )
           
           ; Write data to file if its new
           IF stale_analog EQ 0 THEN BEGIN
@@ -393,27 +394,27 @@ WHILE 1 DO BEGIN
           ; We continually update the display as, even if we don't get a new valid Dewesoft packet, the valid data is still in the monitor struct
           ; Window 1 display
           wtime = tic()
-          ta23.string = jpmprintnumber(analogMonitors.exprt_28v)
-          ta124.string = jpmprintnumber(analogMonitors.tm_exp_batt_volt)
-          ta106.string = jpmprintnumber(analogMonitors.exprt_bus_cur)
-          ta13.string = jpmprintnumber(analogMonitors.slr_pressure)
-          ta14.string = jpmprintnumber(t_Cold_Finger)
-          ta29.string = jpmprintnumber(analogMonitors.fpga_5v)
-          ta30.string = jpmprintnumber(analogMonitors.tv_12v)
-          ta19.string = jpmprintnumber(megsa_ccd_prt)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+")"
-          ta20.string = jpmprintnumber(megsb_ccd_prt)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+")"
-          ta19b.string = jpmprintnumber(megsa_ccd_diode)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+")"
-          ta20b.string = jpmprintnumber(megsb_ccd_diode)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+")"
-          ta1.string = jpmprintnumber(t_MEGSP)
-          ta26.string = jpmprintnumber(analogMonitors.hvs_pressure)
-          ta22.string = jpmprintnumber(t_Cryo_Hotside)
-          ta82.string = sdoor_state
+          t_exprt_28v.string = jpmprintnumber(analogMonitors.exprt_28v)
+          t_exp_batt_volt.string = jpmprintnumber(analogMonitors.tm_exp_batt_volt)
+          t_exp_bus_cur.string = jpmprintnumber(analogMonitors.exprt_bus_cur)
+          t_slr_pressure.string = jpmprintnumber(analogMonitors.slr_pressure)
+          t_cryo_cold.string = jpmprintnumber(cryo_coldside_temp)
+          t_fpga_5v.string = jpmprintnumber(analogMonitors.fpga_5v)
+          t_tv_12v.string = jpmprintnumber(analogMonitors.tv_12v)
+          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+")"
+          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+")"
+          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+")"
+          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+")"
+          t_MEGSP_temp.string = jpmprintnumber(MEGSP_temp)
+          t_HVS_Pressure.string = jpmprintnumber(analogMonitors.hvs_pressure)
+          t_cryo_hot.string = jpmprintnumber(Cryo_Hotside_temp)
+          t_sdoor_state.string = sdoor_state
           IF ((analogMonitors.vac_valve_pos LE 0.2 AND analogMonitors.vac_valve_pos GT -1) OR (analogMonitors.vac_valve_pos GE 3.3 AND analogMonitors.vac_valve_pos LT 3.6)) THEN BEGIN
-            ta25.string="Moving ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
+            t_vac_valve_pos.string="Moving ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
           ENDIF ELSE IF (analogMonitors.vac_valve_pos LE -1 OR analogMonitors.vac_valve_pos GE 3.6) THEN BEGIN
-            ta25.string="Open ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
+            t_vac_valve_pos.string="Open ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
           ENDIF ELSE BEGIN
-            ta25.string="Closed ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
+            t_vac_valve_pos.string="Closed ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
           ENDELSE
           
           
@@ -442,20 +443,20 @@ WHILE 1 DO BEGIN
             set_monitor_window_color, analogTextObjArray
           ENDIF ELSE BEGIN
             monitorsRefreshText.font_color = blueColor
-            set_monitor_window_color, [ta82, ta25, ta26, ta30, ta1,ta22], color=fontColor
+            set_monitor_window_color, [t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_tv_12v, t_MEGSP_temp,t_cryo_hot], color=fontColor
 
-            get_color_limit, ta23, analogMonitors.exprt_28v, rl=0, rh=22
-            get_color_limit, ta124, analogMonitors.tm_exp_batt_volt, rl=22, rh=35
-            get_color_limit, ta106, analogMonitors.exprt_bus_cur, rl=0.9, rh=2
-            get_color_limit, ta13, analogMonitors.slr_pressure, rl=0, rh=.5
-            get_color_limit, ta14, t_cold_finger, rl=-273, rh=-35
-            get_color_limit, ta29, analogMonitors.fpga_5v, rl=4.5, rh=5.5
+            get_color_limit, t_exprt_28v, analogMonitors.exprt_28v, rl=0, rh=22
+            get_color_limit, t_exp_batt_volt, analogMonitors.tm_exp_batt_volt, rl=22, rh=35
+            get_color_limit, t_exp_bus_cur, analogMonitors.exprt_bus_cur, rl=0.9, rh=2
+            get_color_limit, t_slr_pressure, analogMonitors.slr_pressure, rl=0, rh=.5
+            get_color_limit, t_cryo_cold, cryo_coldside_temp, rl=-273, rh=-35
+            get_color_limit, t_fpga_5v, analogMonitors.fpga_5v, rl=4.5, rh=5.5
             get_color_limit, ta3, analogMonitors.megsa_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, ta15, analogMonitors.megsb_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
-            get_color_limit, ta19, analogMonitors.megsa_ccd_temp1, rl=0, rh=3, green_string=megsa_ccd_prt, red_string=megsa_ccd_prt
-            get_color_limit, ta20, analogMonitors.megsb_ccd_temp1, rl=0, rh=3, green_string=megsb_ccd_prt, red_string=megsb_ccd_prt
-            get_color_limit, ta19b, analogMonitors.megsa_ccd_temp2, rl=0, rh=3, green_string=megsa_ccd_diode, red_string=megsa_ccd_diode
-            get_color_limit, ta20b, analogMonitors.megsb_ccd_temp2, rl=0, rh=3, green_string=megsb_ccd_diode, red_string=megsb_ccd_diode
+            get_color_limit, t_ma_ccd_temp1, analogMonitors.megsa_ccd_temp1, rl=0, rh=3, green_string=megsa_ccd_prt_temp, red_string=megsa_ccd_prt_temp
+            get_color_limit, t_mb_ccd_temp1, analogMonitors.megsb_ccd_temp1, rl=0, rh=3, green_string=megsb_ccd_prt_temp, red_string=megsb_ccd_prt_temp
+            get_color_limit, t_ma_ccd_temp2, analogMonitors.megsa_ccd_temp2, rl=0, rh=3, green_string=megsa_ccd_diode_temp, red_string=megsa_ccd_diode_temp
+            get_color_limit, t_mb_ccd_temp2, analogMonitors.megsb_ccd_temp2, rl=0, rh=3, green_string=megsb_ccd_diode_temp, red_string=megsb_ccd_diode_temp
             get_color_limit, ta31, analogMonitors.megsa_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, ta32, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
 
