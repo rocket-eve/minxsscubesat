@@ -1,4 +1,4 @@
-pro position_tm1_esp_megsp_on_window, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2, monitorSerialRefreshText, graphicInfo:graphicInfo
+pro position_tm1_esp_megsp_on_window, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2, monitorSerialRefreshText, graphicInfo=graphicInfo
 
   t =         text(0.4, 0.95, 'ESP', FONT_SIZE = graphicInfo.fontSize + 6, FONT_COLOR = graphicInfo.blueColor)
   t =         text(0.6, graphicInfo.topLinePosition, 'ESP FPGA Time = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
