@@ -211,13 +211,14 @@ position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
 wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
 
 position_tm1_analog_on_window, t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
-                               ta3, ta15, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, ta31, ta32, t_MEGSP_temp, $
+                               t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, megsa_ff_led, megsb_ff_led, t_MEGSP_temp, $
                                monitorsRefreshText, $
                                graphicInfo=graphicInfo
 
 serialTextObjArray = [monitorsSerialRefreshText, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2]
 
-analogTextObjArray = [t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, ta3, ta15, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, ta31, ta32, t_MEGSP_temp, monitorsRefreshText]
+analogTextObjArray = [t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
+  t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, megsa_ff_led, megsb_ff_led, t_MEGSP_temp, monitorsRefreshText]
 
 if keyword_set(test_display_only) then stop
 
@@ -451,14 +452,14 @@ WHILE 1 DO BEGIN
             get_color_limit, t_slr_pressure, analogMonitors.slr_pressure, rl=0, rh=.5
             get_color_limit, t_cryo_cold, cryo_coldside_temp, rl=-273, rh=-35
             get_color_limit, t_fpga_5v, analogMonitors.fpga_5v, rl=4.5, rh=5.5
-            get_color_limit, ta3, analogMonitors.megsa_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
-            get_color_limit, ta15, analogMonitors.megsb_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
+            get_color_limit, t_megsa_htr, analogMonitors.megsa_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
+            get_color_limit, t_megsb_htr, analogMonitors.megsb_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, t_ma_ccd_temp1, analogMonitors.megsa_ccd_temp1, rl=0, rh=3, green_string=megsa_ccd_prt_temp, red_string=megsa_ccd_prt_temp
             get_color_limit, t_mb_ccd_temp1, analogMonitors.megsb_ccd_temp1, rl=0, rh=3, green_string=megsb_ccd_prt_temp, red_string=megsb_ccd_prt_temp
             get_color_limit, t_ma_ccd_temp2, analogMonitors.megsa_ccd_temp2, rl=0, rh=3, green_string=megsa_ccd_diode_temp, red_string=megsa_ccd_diode_temp
             get_color_limit, t_mb_ccd_temp2, analogMonitors.megsb_ccd_temp2, rl=0, rh=3, green_string=megsb_ccd_diode_temp, red_string=megsb_ccd_diode_temp
-            get_color_limit, ta31, analogMonitors.megsa_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
-            get_color_limit, ta32, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
+            get_color_limit, megsa_ff_led, analogMonitors.megsa_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
+            get_color_limit, megsb_ff_led, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
 
             analogMonitorUpdateTime = tic()
             
