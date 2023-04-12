@@ -202,7 +202,7 @@ wb = window(DIMENSIONS = [400,750], /NO_TOOLBAR, LOCATION = [0, 0], BACKGROUND_C
 ; start with serial3 (ESP) data
 position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
                                   s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, $
-                                  s4_time, s4_megsp1, s4_megsp2, monitorSerialRefreshText, $
+                                  s4_time, s4_megsp1, s4_megsp2, monitorsSerialRefreshText, $
                                   graphicInfo=graphicInfo
 
 

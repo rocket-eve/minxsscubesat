@@ -170,7 +170,7 @@ function define_analog_monitor_structure
   
   ; define the order here and chop out stuff we don't want
   ; use help
-  stop
+  ; stop
 
   ; items displayed on serial monitors window
   ; esp_fpga time, record counter, diode 1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -186,6 +186,6 @@ function define_analog_monitor_structure
   ;keep = []
   ;analogMonitorsStructure = analogMonitorsStructure[keep]
 
-  stop
+  ;stop
   return, analogMonitorsStructure
 end
