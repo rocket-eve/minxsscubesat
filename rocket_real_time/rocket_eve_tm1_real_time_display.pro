@@ -356,38 +356,8 @@ WHILE 1 DO BEGIN
              write_tm1_to_csv_data_file, file_lun, analogMonitors
           ENDIF
           
-          ;save diode data for plotting
-  ;        if stale_serial EQ 0 THEN BEGIN
-  ;          esp_d1=[esp_d1,analogMonitors.esp1]
-  ;          esp_d2=[esp_d2,analogMonitors.esp2]
-  ;          esp_d3=[esp_d3,analogMonitors.esp3]
-  ;          esp_d4=[esp_d4,analogMonitors.esp4]
-  ;          esp_d5=[esp_d5,analogMonitors.esp5]
-  ;          esp_d6=[esp_d6,analogMonitors.esp6]
-  ;          esp_d7=[esp_d7,analogMonitors.esp7]
-  ;          esp_d8=[esp_d8,analogMonitors.esp8]
-  ;          esp_d9=[esp_d9,analogMonitors.esp9]
-  ;          megsp_d1=[megsp_d1,analogMonitors.megsp1]
-  ;          megsp_d2=[megsp_d2,analogMonitors.megsp2] 
-  ;        ENDIF   
-  ;         
   ;        ; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
   ;        !Except = 0 ; Disable annoying divide by 0 messages
-  ;        ;plot the last 10 valid esp and megs readings
-  ;        if n_elements(megsp_d1) GT 10 THEN BEGIN
-  ;          p1a.setdata,megsp_d1[n_elements(megsp_d1)-1-10:n_elements(megsp_d1)-1]
-  ;          p1b.setdata,megsp_d2[n_elements(megsp_d2)-1-10:n_elements(megsp_d2)-1]
-  ;          
-  ;          p2a.setdata,esp_d1[n_elements(esp_d1)-1-10:n_elements(esp_d1)-1]
-  ;          p2b.setdata,esp_d2[n_elements(esp_d2)-1-10:n_elements(esp_d2)-1]
-  ;          p2c.setdata,esp_d3[n_elements(esp_d3)-1-10:n_elements(esp_d3)-1]
-  ;          p2d.setdata,esp_d4[n_elements(esp_d4)-1-10:n_elements(esp_d4)-1]
-  ;          p2e.setdata,esp_d5[n_elements(esp_d5)-1-10:n_elements(esp_d5)-1]
-  ;          p2f.setdata,esp_d6[n_elements(esp_d6)-1-10:n_elements(esp_d6)-1]
-  ;          p2g.setdata,esp_d7[n_elements(esp_d7)-1-10:n_elements(esp_d7)-1]
-  ;          p2h.setdata,esp_d8[n_elements(esp_d8)-1-10:n_elements(esp_d8)-1]
-  ;          p2i.setdata,esp_d9[n_elements(esp_d9)-1-10:n_elements(esp_d9)-1]
-  ;        ENDIF
   ;        t1a.string='MEGSP FPGA Time = '+jpmprintnumber(analogMonitors.megsp_fpga_time)
   ;        t2a.string='ESP FPGA Time = '+jpmprintnumber(analogMonitors.esp_fpga_time)
   ;        t2b.string='ESP Record Counter = '+jpmprintnumber(analogMonitors.esp_rec_counter)
