@@ -1,5 +1,5 @@
 pro spa_realtime
-  dirX55=file_search("/Volumes/Users/rocket/Dropbox/minxss_dropbox/rocket_eve/36.353/NUC Software/Hydra_2021_XRS_X55/Rundirs/2021_*")
+  dirX55=file_search("/Volumes/Users/rocket/Dropbox/minxss_dropbox/rocket_eve/36.353/NUC Software/Hydra_2021_XRS_X55/Rundirs/2023_*")
   dirX55=dirX55[-1]
   while 1 do begin
     fileX55=file_search(dirX55+'/tlm*')
