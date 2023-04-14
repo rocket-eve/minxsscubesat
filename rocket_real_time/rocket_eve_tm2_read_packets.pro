@@ -93,10 +93,10 @@ nint = nbytes / 2L
 
 ; WSMR telemetry packet sync words
 ; TODO: Remove this? This actually isn't used anywhere in the code
-sync1Value = '2840'X
-sync1Offset = nint - 1L ; 0L if reading binary file, because WSMR moves this syncbyte to the beginning of the packet
-sync2Value = 'FE6B'X
-sync2Offset = nint - 2L ; 1L if reading binary file, because WSMR moves sync1 to beginning of packet, making sync2 the end of the packet
+;sync1Value = '2840'X
+;sync1Offset = nint - 1L ; 0L if reading binary file, because WSMR moves this syncbyte to the beginning of the packet
+;sync2Value = 'FE6B'X
+;sync2Offset = nint - 2L ; 1L if reading binary file, because WSMR moves sync1 to beginning of packet, making sync2 the end of the packet
 
 ; Instrument packet fiducial values (sync words)
 csolFrameStartFiducialValue1 = '5555'X
