@@ -44,9 +44,10 @@
 ;
 ; RESTRICTIONS:
 ;   Requires that the data pipe computer is not yet running. See procedure below for the critical step-by-step to get the link up.
-;   Requires the rocket_real_time path environment variable. Can do this in an IDL startup file or in shell.
 ;   Requires JPMRange.pro
 ;   Requires JPMPrintNumber.pro
+;
+;   DLW 4/14/23 NO LONGER requires the rocket_real_time path environment variable. Use introspection of this code to use as path.
 ;
 ; PROCEDURE:
 ;   Prior to running this code:
@@ -87,7 +88,8 @@ PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRO
                                       megsAStatisticsBox=megsAStatisticsBox, megsBStatisticsBox=megsBStatisticsBox, $
                                       megsAExpectedCentroid=megsAExpectedCentroid, megsBExpectedCentroid=megsBExpectedCentroid, $
                                       frequencyOfImageDisplay=frequencyOfImageDisplay, noMod256=noMod256, $
-                                      DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND
+                                      DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND, $
+                                      playback=playback
 
 ; COMMON blocks for use with rocket_read_tm2_function. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
@@ -110,7 +112,13 @@ IF ~keyword_set(megsAStatisticsBox) THEN megsAStatisticsBox = [402, 80, 442, 511
 IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 754] ; Corresponds to center block
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
-IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 16 ;32
+IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 128;32 ; 64 gives about 1-2 sec
+; playback metrics
+; 256 100% 0.5-1 sec/image
+; 128 100% 0.5-2 sec/image
+; 64 100% 1-3 sec/image
+; 32 100% 1-4 sec/image
+; 16 100% 2-6 sec/image
 IF keyword_set(LIGHT_BACKGROUND) THEN BEGIN
   fontColor = 'black'
   backgroundColor = 'white'
@@ -128,21 +136,23 @@ fontSizeHk = 14
 numberOfInstruments = keyword_set(DOMEGSA) + keyword_set(DOMEGSB) + keyword_set(DOCSOL)
 
 ; Open a port that the DEWESoft computer will be commanded to stream to (see PROCEDURE in this code's header)
-socket, connectionCheckLUN, port, /LISTEN, /GET_LUN, /RAWIO
-;STOP, 'Wait until DEWESoft is set to startacq. Then click go.'
-wait, 5
+if ~keyword_set(playback) then begin
+  socket, connectionCheckLUN, port, /LISTEN, /GET_LUN, /RAWIO
+  ;STOP, 'Wait until DEWESoft is set to startacq. Then click go.'
+  wait, 5
 
-; Prepare a separate logical unit (LUN) to read the actual incoming data
-get_lun, socketLun
+  ; Prepare a separate logical unit (LUN) to read the actual incoming data
+  get_lun, socketLun
 
-; Wait for the connection from DEWESoft to be detected
-isConnected = 0
-WHILE isConnected EQ 0 DO BEGIN
-  IF file_poll_input(connectionCheckLUN, timeout=5.0) THEN BEGIN ; Timeout is in seconds
-    socket, socketLun, accept=connectionCheckLUN, /RAWIO, connect_timeout=30., read_timeout=30., write_timeout=30., /SWAP_IF_BIG_ENDIAN
-    isConnected = 1
-  ENDIF ELSE message, /INFO, JPMsystime() + ' No connection detected yet.'
-ENDWHILE
+  ; Wait for the connection from DEWESoft to be detected
+  isConnected = 0
+  WHILE isConnected EQ 0 DO BEGIN
+    IF file_poll_input(connectionCheckLUN, timeout=5.0) THEN BEGIN ; Timeout is in seconds
+      socket, socketLun, accept=connectionCheckLUN, /RAWIO, connect_timeout=30., read_timeout=30., write_timeout=30., /SWAP_IF_BIG_ENDIAN
+      isConnected = 1
+    ENDIF ELSE message, /INFO, JPMsystime() + ' No connection detected yet.'
+  ENDWHILE
+endif
 
 ; Prepare a socket read buffer
 socketDataBuffer = !NULL
@@ -257,7 +267,9 @@ IF keyword_set(DOCSOL) then begin
 ENDIF
 
 ; Initialize COMMON buffer variables
-restore, getenv('rocket_real_time') + 'MegsCcdLookupTable.sav'
+; MegsCcdLookupTable.sav is in the same directory as this code
+path = file_dirname((scope_traceback(/str))[-1].filename) + path_sep()
+restore, path + 'MegsCcdLookupTable.sav'
 megsAImageBuffer = uintarr(2048L, 1024L)
 megsBImageBuffer = uintarr(2048L, 1024L)
 csolNumberGapPixels = 10
@@ -287,19 +299,24 @@ WHILE 1 DO BEGIN
   wrapperClock = TIC()
 
   ; Store how many bytes are on the socket
-  socketDataSize = (fstat(socketLun)).size
+  if ~keyword_set(playback) then begin  
+    socketDataSize = (fstat(socketLun)).size
+  endif else socketDataSize=1 ; for playback
 
   ; Trigger data processing if there's actually something to process
   IF socketDataSize GT 0 THEN BEGIN
 
     ; Read data on the socket
-    socketData = bytarr((fstat(socketLun)).size)
-    wait, 0.5 ; tune the wait time to reduce CPU load from tiny reads, usually reads abotu 80,000 bytes
-    readu, socketLun, socketData
-    print,'number of bytes read = '+strtrim(n_elements(socketData),2)
+    if ~keyword_set(playback) then begin
+      socketData = bytarr((fstat(socketLun)).size)
+      wait, 0.05 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
+      readu, socketLun, socketData
+    endif else socketData = playback_dewesoft_packet(/tm2)
 
-    ; write to a binary file of bytes
-    write_raw_tm2_binary, socketData
+    if keyword_set(debug) then print,'number of bytes read = '+strtrim(n_elements(socketData),2)
+
+    ; write to a binary file of bytes if you want to keep some raw data for later replay/analysis
+    ;write_raw_tm2_binary, socketData
 
 
     ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL.
@@ -327,6 +344,9 @@ WHILE 1 DO BEGIN
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 5] NE 2 THEN CONTINUE
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 6] NE 1 THEN CONTINUE
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 7] NE 0 THEN CONTINUE
+        ; is this the same as the next array_equal call?
+        ;trailing_sync = [6,5,4,3,2,1,0]
+        ;if array_equal(socketDataBuffer[sync7Indices[sync7LoopIndex] - (1+lindgen(7))], trailing_sync) then continue
 
         ; If this is the first syncLoopIndex, then verify this sync pattern and continue to the next sync pattern to determine
         ; the data to process (singleFullDeweSoftPacket) between the two sync patterns
