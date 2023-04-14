@@ -1,3 +1,9 @@
+pro close_raw_tm2_binary
+  common write_raw_tm2_binary, filename, file_lun
+  free_lun,file_lun
+  return
+end
+
 pro write_raw_tm2_binary, data
 
   common write_raw_tm2_binary, filename, file_lun
