@@ -83,7 +83,8 @@
 ;
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
-                                      DEBUG=DEBUG, LIGHT_BACKGROUND=LIGHT_BACKGROUND, frequencyOfImageDisplay=frequencyOfImageDisplay, test_display_only=test_display_only
+                                      DEBUG=DEBUG, LIGHT_BACKGROUND=LIGHT_BACKGROUND, frequencyOfImageDisplay=frequencyOfImageDisplay, $
+                                      test_display_only=test_display_only, record_binary=record_binary
 
 debug=1
 
@@ -305,7 +306,7 @@ WHILE 1 DO BEGIN
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[-2]:wStopSync[-1]]
 
 	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
-    write_raw_tm1_binary, singleFullDeweSoftPacket
+    if keyword_set(record_binary) then write_raw_tm1_binary, singleFullDeweSoftPacket
 
 
     ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)

@@ -89,7 +89,7 @@ PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRO
                                       megsAExpectedCentroid=megsAExpectedCentroid, megsBExpectedCentroid=megsBExpectedCentroid, $
                                       frequencyOfImageDisplay=frequencyOfImageDisplay, noMod256=noMod256, $
                                       DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND, $
-                                      playback=playback
+                                      playback=playback, record_binary=record_binary
 
 ; COMMON blocks for use with rocket_read_tm2_function. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
@@ -316,7 +316,7 @@ WHILE 1 DO BEGIN
     if keyword_set(debug) then print,'number of bytes read = '+strtrim(n_elements(socketData),2)
 
     ; write to a binary file of bytes if you want to keep some raw data for later replay/analysis
-    ;write_raw_tm2_binary, socketData
+    if keyword_set(record_binary) then write_raw_tm2_binary, socketData
 
 
     ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL.
