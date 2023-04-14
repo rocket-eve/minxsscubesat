@@ -84,7 +84,7 @@
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
                                       DEBUG=DEBUG, LIGHT_BACKGROUND=LIGHT_BACKGROUND, frequencyOfImageDisplay=frequencyOfImageDisplay, $
-                                      test_display_only=test_display_only, record_binary=record_binary
+                                      test_display_only=test_display_only, record_binary=record_binary, playback=playback
 
 debug=1
 
@@ -124,25 +124,28 @@ graphicinfo = {fontColor:fontColor, $
 
 if keyword_set(test_display_only) then goto, label_create_display
 
-; Open a port that the DEWESoft computer will be commanded to stream to (see PROCEDURE in this code's header)
-socket, connectionCheckLUN, port, /LISTEN, /GET_LUN, /RAWIO
-STOP, 'Wait until DEWESoft is set to startacq. Then click go.'
+if ~keyword_set(playback) then begin
+  ; Open a port that the DEWESoft computer will be commanded to stream to (see PROCEDURE in this code's header)
+  socket, connectionCheckLUN, port, /LISTEN, /GET_LUN, /RAWIO
+  STOP, 'Wait until DEWESoft is set to startacq. Then click go.'
 
-; Prepare a separate logical unit (LUN) to read the actual incoming data
-get_lun, socketLun
 
-; Prepare output file
-open_tm1_csv_data_file_for_writing, file_lun
+  ; Prepare a separate logical unit (LUN) to read the actual incoming data
+  get_lun, socketLun
 
-; Wait for the connection from DEWESoft to be detected
-isConnected = 0
-WHILE isConnected EQ 0 DO BEGIN
+  ; Prepare output file
+  open_tm1_csv_data_file_for_writing, file_lun
 
-  IF file_poll_input(connectionCheckLUN, timeout = 5.0) THEN BEGIN ; Timeout is in seconds
-    socket, socketLun, accept = connectionCheckLUN, /RAWIO, CONNECT_TIMEOUT = 30., READ_TIMEOUT = 30., WRITE_TIMEOUT = 30., /SWAP_IF_BIG_ENDIAN
-    isConnected = 1
-  ENDIF ELSE message, /INFO, JPMsystime() + ' No connection detected yet.'
-ENDWHILE
+  ; Wait for the connection from DEWESoft to be detected
+  isConnected = 0
+  WHILE isConnected EQ 0 DO BEGIN
+
+    IF file_poll_input(connectionCheckLUN, timeout = 5.0) THEN BEGIN ; Timeout is in seconds
+      socket, socketLun, accept = connectionCheckLUN, /RAWIO, CONNECT_TIMEOUT = 30., READ_TIMEOUT = 30., WRITE_TIMEOUT = 30., /SWAP_IF_BIG_ENDIAN
+      isConnected = 1
+    ENDIF ELSE message, /INFO, JPMsystime() + ' No connection detected yet.'
+  ENDWHILE
+endif ; playback
 
 ; Prepare a socket read buffer
 socketDataBuffer = !NULL
@@ -243,23 +246,29 @@ WHILE 1 DO BEGIN
   wrapperClock = TIC()
 
   ; Store how many bytes are on the socket
-  socketDataSize = (fstat(socketLun)).size
+  if ~keyword_set(playback) then begin
+    socketDataSize = (fstat(socketLun)).size
+  endif else socketDataSize=1 ; for playback
 
   ; Trigger data processing if there's actually something to process
   IF socketDataSize GT 0 THEN BEGIN
 
     ; Read data on the socket
-    socketData = bytarr((fstat(socketLun)).size)
-    readu, socketLun, socketData
+    if ~keyword_set(playback) then begin
+      socketData = bytarr((fstat(socketLun)).size)
+      readu, socketLun, socketData
+    endif else socketData = playback_dewesoft_packet(/tm1)
+
+    
     IF keyword_set(DEBUG) THEN BEGIN
       print,strtrim(systime(),2)+' bytes read = '+strtrim(n_elements(socketData),2)
       ;stop
     ENDIF
 
-    wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
-    ;wait,1.0 ; 1 seco must be dropping packets, not keeping up
+    wait,1
+    ;wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
 
-    ; make winodws stale if no updates for 10 seconds
+    ; make windows stale if no updates for 10 seconds
     IF toc(serialMonitorUpdateTime) GT 10 AND toc(serialMonitorUpdateTime) LT 20 THEN BEGIN
       set_monitor_window_color, serialTextObjArray
     ENDIF
@@ -274,7 +283,7 @@ WHILE 1 DO BEGIN
     sync7Indices = where(socketDataBuffer EQ 7, numSync7s)
 
     ; Find all start syncs
-    wStartSync = where(socketDataBuffer EQ 0 AND $
+    wStartSync = where(socketDataBuffer EQ 0 AND $ ; start sync
       shift(socketDataBuffer, -1) EQ 1 AND $
       shift(socketDataBuffer, -2) EQ 2 AND $
       shift(socketDataBuffer, -3) EQ 3 AND $
@@ -282,7 +291,7 @@ WHILE 1 DO BEGIN
       shift(socketDataBuffer, -5) EQ 5 AND $
       shift(socketDataBuffer, -6) EQ 6 AND $
       shift(socketDataBuffer, -7) EQ 7 AND $
-      shift(socketDataBuffer, -12) EQ 0 AND $
+      shift(socketDataBuffer, -12) EQ 0 AND $ ; packet type = 0
       shift(socketDataBuffer, -13) EQ 0 AND $
       shift(socketDataBuffer, -14) EQ 0 AND $
       shift(socketDataBuffer, -15) EQ 0, nsync)
@@ -291,7 +300,8 @@ WHILE 1 DO BEGIN
     ENDIF
 
     ; Get the stop sync location
-    wStopSync = wStartSync[1:*] - 15 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
+    ;wStopSync = wStartSync[1:*] - 15 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
+    wStopSync = wStartSync[1:*] - 1 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
 
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
 
@@ -304,10 +314,12 @@ WHILE 1 DO BEGIN
 
     ; Store the data to be processed between the DEWESoft start/stop syncs
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[-2]:wStopSync[-1]]
-
+    
+;stop
 	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
     if keyword_set(record_binary) then write_raw_tm1_binary, singleFullDeweSoftPacket
 
+    ;print_dewesoft_header, singleFullDeweSoftPacket
 
     ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)
     ; and process the data between every set of two verified sync byte patterns

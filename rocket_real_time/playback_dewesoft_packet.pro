@@ -13,9 +13,9 @@ function playback_dewesoft_packet, tm1=tm1, tm2=tm2
   common playback_dewesoft_packet, tmfile, tmfile_lun, filedata, pktnumber, pktstart, pktend, n_pktend
   
   if keyword_set(tm1) then begin
-    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm1_files/rocket_tm1_bin_2023-04-14_08_49_51.bin'
+    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm1_files/rocket_tm1_bin_2023-04-14_16_48_05.bin'
   endif else begin
-    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm2_files/rocket_tm2_bin_2023-04-14_08_38_30.bin'
+    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm2_files/rocket_tm2_bin_2023-04-14_14_24_19.bin'
   endelse
 
   if size(filedata,/type) eq 0 then begin
@@ -31,20 +31,35 @@ function playback_dewesoft_packet, tm1=tm1, tm2=tm2
 
     ; find end sync markers
     syncend = [7b, 6b, 5b, 4b, 3b, 2b, 1b, 0b]
-    ;syncstart = reverse(syncend)
-    ; find indices of the 0 in the syncend, last value is the end of a packet
-    pktend=where($
-      shift(filedata,7) eq syncend[0] and $
-      shift(filedata,6) eq syncend[1] and $
-      shift(filedata,5) eq syncend[2] and $
-      shift(filedata,4) eq syncend[3] and $
-      shift(filedata,3) eq syncend[4] and $
-      shift(filedata,2) eq syncend[5] and $
-      shift(filedata,1) eq syncend[6] and $
-      filedata eq syncend[7], n_pktend)
+    syncstart = reverse(syncend)
+    
+    if keyword_set(tm2) then begin
+      ; find indices of the 0 in the syncend, last value is the end of a packet
+      pktend=where($
+        shift(filedata,7) eq syncend[0] and $
+        shift(filedata,6) eq syncend[1] and $
+        shift(filedata,5) eq syncend[2] and $
+        shift(filedata,4) eq syncend[3] and $
+        shift(filedata,3) eq syncend[4] and $
+        shift(filedata,2) eq syncend[5] and $
+        shift(filedata,1) eq syncend[6] and $
+        filedata eq syncend[7], n_pktend)
 
-    pktstart=[0L, 1L+pktend[0:n_pktend-2]]
-    ; n_pktend is the number of packets
+      pktstart=[0L, 1L+pktend[0:n_pktend-2]]
+      ; n_pktend is the number of packets
+    endif else begin
+      ; TM1 has NOT END SYNC MARKER
+      pktstart=where($
+        filedata eq syncstart[0] and $
+        shift(filedata,-1) eq syncstart[1] and $
+        shift(filedata,-2) eq syncstart[2] and $
+        shift(filedata,-3) eq syncstart[3] and $
+        shift(filedata,-4) eq syncstart[4] and $
+        shift(filedata,-5) eq syncstart[5] and $
+        shift(filedata,-6) eq syncstart[6] and $
+        shift(filedata,-7) eq syncstart[7])
+      pktend=[pktstart[1:*]-1, n_elements(filedata)-1]
+    endelse
   endif
 
   n_pktend = n_elements(pktend)

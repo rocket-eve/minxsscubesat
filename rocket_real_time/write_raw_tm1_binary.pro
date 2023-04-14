@@ -14,6 +14,7 @@ pro write_raw_tm1_binary, data
   endif
 
   writeu, file_lun, data
+  print,'wrote '+strtrim(n_elements(Data),2)+' bytes to file'
   
 return
 end

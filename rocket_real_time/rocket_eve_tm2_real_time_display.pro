@@ -112,7 +112,7 @@ IF ~keyword_set(megsAStatisticsBox) THEN megsAStatisticsBox = [402, 80, 442, 511
 IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 754] ; Corresponds to center block
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
-IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 128;32 ; 64 gives about 1-2 sec
+IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 64;32 ; 64 gives about 1-2 sec
 ; playback metrics
 ; 256 100% 0.5-1 sec/image
 ; 128 100% 0.5-2 sec/image
@@ -152,7 +152,7 @@ if ~keyword_set(playback) then begin
       isConnected = 1
     ENDIF ELSE message, /INFO, JPMsystime() + ' No connection detected yet.'
   ENDWHILE
-endif
+endif ; playback
 
 ; Prepare a socket read buffer
 socketDataBuffer = !NULL
