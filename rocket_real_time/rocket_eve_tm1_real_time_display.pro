@@ -3,7 +3,7 @@
 ;   rocket_eve_tm1_real_time_display
 ;
 ; PURPOSE:
-;   Wrapper script for reading from a remote socket. Calls rocket_eve_tm1_read_packets (the interpreter) when new data comes over the pipe. 
+;   Wrapper script for reading from a remote socket. Calls rocket_eve_tm1_read_packets (the interpreter) when new data comes over the pipe.
 ;
 ; INPUTS:
 ;   port [integer]: The port number to open that DEWESoft will be commanded to stream data to. This requires that both machines are running on the same network.
@@ -12,7 +12,7 @@
 ;
 ; OPTIONAL INPUTS:
 ;   windowSize [integer, integer]:          Set this to the pixel dimensions in [x, y] that you want the display. Default is [1000, 800].
-;   data_output_path_file_prepend [string]: Where output csv files will be stored. Path and whatever prepend is desired for the filename. 
+;   data_output_path_file_prepend [string]: Where output csv files will be stored. Path and whatever prepend is desired for the filename.
 ;                                           Default is '/Users/minxss/Dropbox/minxss_dropbox/data/reve_36_353/tm1_files/rocket_analog_monitors_'
 ;   frequencyOfImageDisplay [integer]:      Number of packets to skip after each display, default=10. In conjunction with the wait, this controls
 ;                                           how busy the system will be. Increase to make screen refreshes less frequent to reduce the load.
@@ -26,28 +26,28 @@
 ;
 ; OPTIONAL OUTPUTS:
 ;   None
-;   
-; COMMON BLOCK VARIABLES: 
+;
+; COMMON BLOCK VARIABLES:
 ;   See rocket_eve_tm1_read_packets for a detailed description. And yes, I know common blocks are bad practice. However, we wanted socket reader / data interpreter modularity but still
-;   require persistent data between the two. Passing variables back and forth between two functions is done by reference, but would result in messy code. So here we are with common blocks. 
+;   require persistent data between the two. Passing variables back and forth between two functions is done by reference, but would result in messy code. So here we are with common blocks.
 ;
 ; RESTRICTIONS:
-;   Requires that the data pipe computer IS NOT YET RUNNING. See procedure below for the critical step-by-step to get the link up. 
+;   Requires that the data pipe computer IS NOT YET RUNNING. See procedure below for the critical step-by-step to get the link up.
 ;   Requires JPMRange.pro
 ;   Requires JPMPrintNumber.pro
 ;
-; PROCEDURE: 
-;   Prior to running this code: 
-;   0) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports. 
+; PROCEDURE:
+;   Prior to running this code:
+;   0) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports.
 ;   1) Start rocket_tm1_start.scpt (Note: this expects the Dewesoft computers IP to be 169.254.17.237 with port 8999 and tranfer port 8002 so if you change
 ;      these defaults you'll have to change both what this IDL procedure is expecting and what the apple script is doing)
-;   
+;
 ;   Or if you hate yourself and want to do things manually:
-;   0) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports. 
+;   0) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports.
 ;   1) Open a terminal (e.g., terminal.app in OSX)
-;   2) type: telnet ipAddress 8999 (where ipAddress is the IP address (duh) of the DEWESoft machine e.g., telnet 169.254.17.237 8999. 
-;            8999 is the commanding port and should not need to be changed). You should get an acknowledgement: +CONNECTED DEWESoft TCP/IP server. 
-;   3) type: listusedchs (This should return a list of all channels being used. EVE data is in three parallel streams, P1, P2, and P3. 
+;   2) type: telnet ipAddress 8999 (where ipAddress is the IP address (duh) of the DEWESoft machine e.g., telnet 169.254.17.237 8999.
+;            8999 is the commanding port and should not need to be changed). You should get an acknowledgement: +CONNECTED DEWESoft TCP/IP server.
+;   3) type: listusedchs (This should return a list of all channels being used. EVE data is in three parallel streams, P1, P2, and P3.
 ;            Note the corresponding channel numbers. For EVE these are ch 13, 14, and 12, respectively).
 ;   4) type: /stx preparetransfer
 ;   5) type: ch 56
@@ -55,16 +55,23 @@
 ;            ch 62
 ;            ch ... (For each channel. There should be 23 in total...).
 ;   6) type: /etx You should get an acknowledgement: +OK
-;   7) NOW you can start this code. It will open the port specified in the input parameter, or use the hard-coded default if not provided in the call. Then it will STOP. Don't continue yet. 
+;   7) NOW you can start this code. It will open the port specified in the input parameter, or use the hard-coded default if not provided in the call. Then it will STOP. Don't continue yet.
 ;   Back to the terminal window
 ;   8) type: starttransfer port (where port is the same port IDL is using in step 8 above, e.g., starttransfer 8002)
-;   9) type: setmode 1 You'll either see +ERR Already in this mode or +OK Mode 1 (control) selected, 
-;             depending on if you've already done this step during debugging this when it inevitably doesn't work the first time. 
+;   9) type: setmode 1 You'll either see +ERR Already in this mode or +OK Mode 1 (control) selected,
+;             depending on if you've already done this step during debugging this when it inevitably doesn't work the first time.
 ;   10) type: startacq You should get an acknowledgement: +OK Acquiring
 ;   11) NOW you can continue running this code
 ;
 ; EXAMPLE:
-;   See PROCEDURE above for examples of each step. 
+;   See PROCEDURE above for examples of each step.
+;
+; ISSUES:
+;	2023-April, D. Woodraska, T. Woods:
+;   Altair DeweSoft has to have the right configuration for data monitors.
+;   For TM1, these have be Asynchronous and ??? without or with ??? Scaling
+;   Asynchronous will add time to each sample (for 10 bytes), and
+;   No Scaling is 2-bytes unsigned integers, Scaling will convert to float values (4 bytes).
 ;
 ; MODIFICATION HISTORY:
 ;   2017-08-08: James Paul Mason: Wrote script based on rocket_eve_tm2_real_time_display.
@@ -77,6 +84,8 @@
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
                                       DEBUG=DEBUG, LIGHT_BACKGROUND=LIGHT_BACKGROUND, frequencyOfImageDisplay=frequencyOfImageDisplay, test_display_only=test_display_only
+
+debug=1
 
 ; Defaults
 IF ~keyword_set(port) THEN port = 8002
@@ -96,7 +105,7 @@ redColor = 'tomato'
 greenColor='lime green'
 fontSize = 16
 
-; Edit here to change axis ranges, titles, locations, etc. 
+; Edit here to change axis ranges, titles, locations, etc.
 textVSpacing = 0.05 ; Vertical spacing
 textHSpacing = 0.02 ; Horizontal spacing
 topLinePosition = 0.90
@@ -231,20 +240,24 @@ WHILE 1 DO BEGIN
 
   ; Start a timer
   wrapperClock = TIC()
-  
+
   ; Store how many bytes are on the socket
   socketDataSize = (fstat(socketLun)).size
-  
+
   ; Trigger data processing if there's actually something to process
   IF socketDataSize GT 0 THEN BEGIN
-    
+
     ; Read data on the socket
     socketData = bytarr((fstat(socketLun)).size)
     readu, socketLun, socketData
     IF keyword_set(DEBUG) THEN BEGIN
       print,strtrim(systime(),2)+' bytes read = '+strtrim(n_elements(socketData),2)
+      stop
     ENDIF
-    
+
+    wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
+    ;wait,1.0 ; 1 seco must be dropping packets, not keeping up
+
     ; make winodws stale if no updates for 10 seconds
     IF toc(serialMonitorUpdateTime) GT 10 AND toc(serialMonitorUpdateTime) LT 20 THEN BEGIN
       set_monitor_window_color, serialTextObjArray
@@ -252,15 +265,13 @@ WHILE 1 DO BEGIN
     IF toc(analogMonitorUpdateTime) GT 10 AND toc(analogMonitorUpdateTime) LT 20 THEN BEGIN
       set_monitor_window_color, analogTextObjArray
     ENDIF
-    
-    wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
-    
-    ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL. 
+
+    ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL.
     socketDataBuffer = [temporary(socketDataBuffer), temporary(socketData)]
-    
+
     ; Do an efficient search for just the last DEWESoft sync byte
     sync7Indices = where(socketDataBuffer EQ 7, numSync7s)
-    
+
     ; Find all start syncs
     wStartSync = where(socketDataBuffer EQ 0 AND $
       shift(socketDataBuffer, -1) EQ 1 AND $
@@ -277,40 +288,41 @@ WHILE 1 DO BEGIN
     IF nsync LE 1 THEN BEGIN
       CONTINUE ; Go back to the socket and read more data because we don't have a start and stop sync yet
     ENDIF
-    
+
     ; Get the stop sync location
     wStopSync = wStartSync[1:*] - 15 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
-    
+
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
-    
+
     ; Read packet type and if it's not our data (type 0) then ... something
     packetType = byte2ulong(socketDataBuffer[wStartSync[-2]+12:wStartSync[-2]+12+3])
     IF packetType NE 0 THEN BEGIN
       message, /INFO, 'ERROR: PackerType is incorrect - fatal - cannot continue :'+strtrim(packetType,2)
       STOP
     ENDIF
-    
+
     ; Store the data to be processed between the DEWESoft start/stop syncs
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[-2]:wStopSync[-1]]
-    
-    
-    
+
+	; +++++ To Do: Could store "singleFullDeweSoftPacket" as binary data in a LOG file
+
+
     ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)
     ; and process the data between every set of two verified sync byte patterns
     IF numSync7s GE 2 THEN BEGIN
-      
+
       ; Reset the index of the verified sync patterns
       verifiedSync7Index = wStartSync[1]
-      
-        
-        
+
+
+
         ; -= PROCESS DATA =- ;
-        
+
         ; Offsets will be an array of where in the Dewesoft packet our data is per channel
         offsets = []
         ; Samplesize is the length of each of our data channels within the Dewesoft packet
         samplesize = []
-        
+
         ; Grab packet samples
         FOR i = 0, n_elements(synctype)-13 DO BEGIN ; JPM: Why -13?
           IF i EQ 0 THEN BEGIN
@@ -328,14 +340,14 @@ WHILE 1 DO BEGIN
           ENDELSE
         ENDFOR
         offsets = [offsets, n_elements(singleFullDeweSoftPacket)] ; Last offset is the end of the Dewesoft packet +1
-        
+
         ; -= INTERPRET DATA =- ;
         ; rocket_eve_tm1_read_packets actually processes the channel data using offsets and sample size and passes back a struct with our data
         analogMonitors = rocket_eve_tm1_read_packets(singleFullDeweSoftPacket, analogMonitorsStructure, offsets, samplesize, monitorsRefreshText, monitorsSerialRefreshText, $
                                                      stale_analog, stale_serial, sdoor_state,sdoor_history)
-        
+
         dewesoftcounter += 1
-        
+
         if dewesoftcounter gt frequencyOfImageDisplay then begin
 
           ; Convert voltages to temperature for the 36.336 flight
@@ -351,18 +363,18 @@ WHILE 1 DO BEGIN
           megsb_ccd_prt_temp = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_prt )
           megsa_ccd_diode_temp = convert_temperatures( analogMonitors.megsa_ccd_temp2, /megsa_ccd_diode )
           megsb_ccd_diode_temp = convert_temperatures( analogMonitors.megsb_ccd_temp2, /megsb_ccd_diode )
-          
+
           ; Write data to file if its new
           IF stale_analog EQ 0 THEN BEGIN
              write_tm1_to_csv_data_file, file_lun, analogMonitors
           ENDIF
-          
+
   ;        ; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
   ;        !Except = 0 ; Disable annoying divide by 0 messages
   ;        t1a.string='MEGSP FPGA Time = '+jpmprintnumber(analogMonitors.megsp_fpga_time)
   ;        t2a.string='ESP FPGA Time = '+jpmprintnumber(analogMonitors.esp_fpga_time)
   ;        t2b.string='ESP Record Counter = '+jpmprintnumber(analogMonitors.esp_rec_counter)
-          
+
           ; We continually update the display as, even if we don't get a new valid Dewesoft packet, the valid data is still in the monitor struct
           ; Window 1 display
           wtime = tic()
@@ -389,8 +401,8 @@ WHILE 1 DO BEGIN
           ENDIF ELSE BEGIN
             t_vac_valve_pos.string="Closed ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
           ENDELSE
-          
-          
+
+
           ; Window 0 display
           s3_time.string = jpmprintnumber(analogMonitors.esp_fpga_time, /NO_DECIMALS)
           s3_cnt.string = jpmprintnumber(analogMonitors.esp_rec_counter, /NO_DECIMALS)
@@ -408,9 +420,9 @@ WHILE 1 DO BEGIN
           s4_megsp2.string = jpmprintnumber(analogMonitors.megsp2, /NO_DECIMALS)
 
           serialMonitorUpdateTime = tic()
-          
+
           ; -= LIMIT CHECKING =- ;
-          
+
           ; Sets the refresh text at the bottom of the analog window to purple if we get 20 invalid dewesoft packets
           IF (stale_analog GT 20) THEN BEGIN
             set_monitor_window_color, analogTextObjArray
@@ -434,9 +446,9 @@ WHILE 1 DO BEGIN
             get_color_limit, t_megsb_ff_led, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
 
             analogMonitorUpdateTime = tic()
-            
+
           ENDELSE
-      
+
           ; Sets the refresh text at the bottom of the serial window to purple if we get 20 invalid dewesoft packets
           IF (stale_serial GT 40) THEN BEGIN
             set_monitor_window_color, serialTextObjArray
@@ -447,13 +459,13 @@ WHILE 1 DO BEGIN
           IF keyword_set(DEBUG) THEN BEGIN
             print,'window write time = '+strtrim(toc(wtime),2)
           ENDIF
-            
+
           ;!Except = 1 ; Re-enable math error logging
-          
+
           dewesoftcounter = 0L ; reset
         ENDIF ; If dewesoftcounter > frequencyOfImageDisplay
 
-        
+
         ; Loop to find the full sync and throw out the unncessarily fast samples
         wStartSync = where(socketDataBuffer[sync7Indices] EQ 7 AND $
                      socketDataBuffer[sync7Indices-1] EQ 6 AND $
@@ -466,7 +478,7 @@ WHILE 1 DO BEGIN
           lastStartSync = wStartSync[-1]
           socketDataBuffer = socketDataBuffer[ sync7Indices[lastStartSync]-7:-1 ]
         ENDIF
-      
+
     ENDIF ; IF numSync7s GE 2
   ENDIF ;ELSE IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' Socket connected but 0 bytes on socket.' ; If socketDataSize GT 0
 
