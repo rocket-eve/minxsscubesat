@@ -3,7 +3,7 @@
 ;   rocket_eve_tm2_real_time_display
 ;
 ; PURPOSE:
-;   Wraps around a read function and displays the interpreted telemetry for rocket EVE. Calls rocket_eve_tm2_read_packets (the interpreter) when new data comes over the pipe. 
+;   Wraps around a read function and displays the interpreted telemetry for rocket EVE. Calls rocket_eve_tm2_read_packets (the interpreter) when new data comes over the pipe.
 ;
 ; INPUTS:
 ;   port [integer]: The port number to open that DEWESoft will be commanded to stream data to. This requires that both machines are running on the same network.
@@ -15,15 +15,15 @@
 ;                                                            which works well on a 5K iMac with [3200, 1800] resolution.
 ;   windowSizeCsol [integer, integer]:                       Same idea as windowSize, but for CSOL science data.
 ;   windowSizeCsolHk [integer, integer]:                     Same idea as windowSizeCsol, but for the housekeeping data.
-;   megsAStatisticsBox [integer, integer, integer, integer]: Hard-coded pixel indices for computing statistics. Default around the 304 Å line. 
-;                                                            Format is [column1, row1, column2, row2] to define the square box. Ditto for megsB. 
-;   megsAExpectedCentroid: [float, float]:                   The expected pixel index location of the centroid in the bounding statistics box. Expected in format [X, Y]. 
-;                                                            Default is [1350, 400]. Ditto for megsB. 
-;   frequencyOfImageDisplay [integer]:                       The refresh rate of images in the fun units of number of DEWESoftPackets per refresh. 
+;   megsAStatisticsBox [integer, integer, integer, integer]: Hard-coded pixel indices for computing statistics. Default around the 304 Å line.
+;                                                            Format is [column1, row1, column2, row2] to define the square box. Ditto for megsB.
+;   megsAExpectedCentroid: [float, float]:                   The expected pixel index location of the centroid in the bounding statistics box. Expected in format [X, Y].
+;                                                            Default is [1350, 400]. Ditto for megsB.
+;   frequencyOfImageDisplay [integer]:                       The refresh rate of images in the fun units of number of DEWESoftPackets per refresh.
 ;
 ; KEYWORD PARAMETERS:
-;   IS_ASYNCHRONOUSDATA: Set this if the DEWESoft software is using an asynchronous byte definition for your channels. Asynchronous data has a timestamp on every sample, 
-;                        which increases the byte stream size by a factor of 5. 
+;   IS_ASYNCHRONOUSDATA: Set this if the DEWESoft software is using an asynchronous byte definition for your channels. Asynchronous data has a timestamp on every sample,
+;                        which increases the byte stream size by a factor of 5.
 ;   DOMEGSA:             Set this to process and display MEGS-A data
 ;   DOMEGSB:             Set this to process and display MEGS-B data
 ;   DOCSOL:              Set this to process and display CSOL data
@@ -31,55 +31,64 @@
 ;   VERBOSE:             Set this to print processing messages.
 ;   LIGHT_BACKGROUND:    Set this to use a white background and dark font instead of the default (black background and white font)
 
-;   
+;
 ; OUTPUTS:
 ;   Produces 3 plot panes and a telemetry window with all the most important data in the world, displayed in real time from a remote socket.
 ;
 ; OPTIONAL OUTPUTS:
 ;   None
-;   
-; COMMON BLOCK VARIABLES: 
+;
+; COMMON BLOCK VARIABLES:
 ;   See rocket_eve_tm2_read_packets for a detailed description. And yes, I know common blocks are bad practice. However, we wanted socket reader / data interpreter modularity but still
-;   require persistent data between the two. Passing variables back and forth between two functions is done by reference, but would result in messy code. So here we are with common blocks. 
+;   require persistent data between the two. Passing variables back and forth between two functions is done by reference, but would result in messy code. So here we are with common blocks.
 ;
 ; RESTRICTIONS:
-;   Requires that the data pipe computer is not yet running. See procedure below for the critical step-by-step to get the link up. 
-;   Requires the rocket_real_time path environment variable. Can do this in an IDL startup file or in shell. 
+;   Requires that the data pipe computer is not yet running. See procedure below for the critical step-by-step to get the link up.
+;   Requires the rocket_real_time path environment variable. Can do this in an IDL startup file or in shell.
 ;   Requires JPMRange.pro
 ;   Requires JPMPrintNumber.pro
 ;
-; PROCEDURE: 
-;   Prior to running this code: 
-;   1) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports. 
-;   
-;   The following steps have been scripted so you can just hit the Run button on rocket_tm2_start.scpt. 
+; PROCEDURE:
+;   Prior to running this code:
+;   1) Connect this machine to a network with the machine running DEWESoft. This can be done with a crossover cable connecting their two ethernet ports.
+;
+;   The following steps have been scripted so you can just hit the Run button on rocket_tm2_start.scpt.
 ;   2) Open a terminal (e.g., terminal.app in OSX)
-;   3) type: telnet ipAddress 8999 (where ipAddress is the IP address (duh) of the DEWESoft machine e.g., telnet 192.168.1.90 8999. 
-;            8999 is the commanding port and should not need to be changed). You should get an acknowledgement: +CONNECTED DEWESoft TCP/IP server. 
-;   4) type: listusedchs (This should return a list of all channels being used. EVE data is in three parallel streams, P1, P2, and P3. 
+;   3) type: telnet ipAddress 8999 (where ipAddress is the IP address (duh) of the DEWESoft machine e.g., telnet 192.168.1.90 8999.
+;            8999 is the commanding port and should not need to be changed). You should get an acknowledgement: +CONNECTED DEWESoft TCP/IP server.
+;   4) type: listusedchs (This should return a list of all channels being used. EVE data is in three parallel streams, P1, P2, and P3.
 ;            Note the corresponding channel numbers. For EVE these are presently ch 13, 14, and 12, respectively).
 ;   5) type: /stx preparetransfer
 ;   6) type: ch 13
 ;            ch 14
 ;            ch 12 (or whatever your relevant channel number/s are).
 ;   7) type: /etx You should get an acknowledgement: +OK
-;   8) Now you can start this code. It will open the port specified in the input parameter, or use the hard-coded default if not provided in the call. Then it will STOP. Don't continue yet. 
+;   8) Now you can start this code. It will open the port specified in the input parameter, or use the hard-coded default if not provided in the call. Then it will STOP. Don't continue yet.
 ;   Back to the terminal window
 ;   9) type: starttransfer port (where port is the same port IDL is using in step 8 above, e.g., starttransfer 8002)
-;   10) type: setmode 1 You'll either see +ERR Already in this mode or +OK Mode 1 (control) selected, 
-;             depending on if you've already done this step during debugging this when it inevitably doesn't work the first time. 
+;   10) type: setmode 1 You'll either see +ERR Already in this mode or +OK Mode 1 (control) selected,
+;             depending on if you've already done this step during debugging this when it inevitably doesn't work the first time.
 ;   11) type: startacq You should get an acknowledgement: +OK Acquiring
 ;   12) Now you can continue running this code
 ;
 ; EXAMPLE:
-;   See PROCEDURE above for examples of each step. 
+;   See PROCEDURE above for examples of each step.
+;
+; ISSUES:
+;	2023-April, D. Woodraska, T. Woods:
+;   Altair DeweSoft has to have the right configuration for the MEGS-A and
+;   MEGS-B parallel data (P1 and P2).  These have be Synchronous and No Scaling
+;   (raw data) so that each sample is 2-bytes.  Asynchronous will add time to each
+;    sample (for 10 bytes), and Scaling will convert to float values (4 bytes).
+;
+;
 ;-
 PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRONOUSDATA, windowSize=windowSize, windowSizeCsol=windowSizeCsol, windowSizeCsolHk=windowSizeCsolHk, $
                                       megsAStatisticsBox=megsAStatisticsBox, megsBStatisticsBox=megsBStatisticsBox, $
                                       megsAExpectedCentroid=megsAExpectedCentroid, megsBExpectedCentroid=megsBExpectedCentroid, $
                                       frequencyOfImageDisplay=frequencyOfImageDisplay, noMod256=noMod256, $
                                       DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND
-                                    
+
 ; COMMON blocks for use with rocket_read_tm2_function. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
 COMMON MEGS_A_PERSISTENT_DATA, megsAImageBuffer, megsAImageIndex, megsAPixelIndex, megsATotalPixelsFound
@@ -87,8 +96,12 @@ COMMON MEGS_B_PERSISTENT_DATA, megsBImageBuffer, megsBImageIndex, megsBPixelInde
 COMMON CSOL_PERSISTENT_DATA, csolImageBuffer, csolPixelIndex, csolRowNumberLatest, csolTotalPixelsFound, csolNumberGapPixels, csolHk
 COMMON DEWESOFT_PERSISTENT_DATA, sampleSizeDeweSoft, offsetP1, numberOfDataSamplesP1, offsetP2, numberOfDataSamplesP2, offsetP3, numberOfDataSamplesP3 ; Note P1 = MEGS-A, P2 = MEGS-B, P3 = CSOL
 
+;debug=1
+
 ; Defaults
 IF ~keyword_set(port) THEN port = 8002
+; SampleSize is 2 bytes for raw data as unsigned integer, or 4 for scaled data as float
+;   or it is 10 bytes for asynchronous to include time stamp
 IF keyword_set(IS_ASYNCHRONOUSDATA) THEN sampleSizeDeweSoft = 10 ELSE sampleSizeDeweSoft = 2
 IF ~keyword_set(windowSize) THEN windowSize = [1984, 530]
 IF ~keyword_set(windowSizeCsol) THEN windowSizeCsol = [1984, 565]
@@ -97,7 +110,7 @@ IF ~keyword_set(megsAStatisticsBox) THEN megsAStatisticsBox = [402, 80, 442, 511
 IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 754] ; Corresponds to center block
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
-IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 32
+IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 16 ;32
 IF keyword_set(LIGHT_BACKGROUND) THEN BEGIN
   fontColor = 'black'
   backgroundColor = 'white'
@@ -139,7 +152,7 @@ socketDataBuffer = !NULL
 ; None needed for EVE
 
 ; -= CREATE PLACE HOLDER PLOTS =- ;
-; Edit here to change axis ranges, titles, locations, etc. 
+; Edit here to change axis ranges, titles, locations, etc.
 statsTextSpacing = 0.02
 statsBoxHeight = statsTextSpacing * 20
 statsYPositions = reverse(JPMRange(0.005, statsBoxHeight - 0.05, npts = 8))
@@ -206,7 +219,7 @@ IF keyword_set(DOCSOL) then begin
   t = text(0.09, 0.34, 'FUV', FONT_SIZE = fontSizeHk, FONT_COLOR = 'dodger blue', ALIGNMENT = 1)
   t = text(0.09, 0.21, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
   csolRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
-  
+
   ; CSOL housekeeping data
   wchk = window(DIMENSIONS = windowSizeCsolHk, /NO_TOOLBAR, LOCATION = [windowSizeCsol[0] + 5, 2 * windowSize[1] + 78], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'CSOL Housekeeping Data')
   t          = text(0.5,              topLinePosition - (0   * hkVSpacing), 'Temperatures', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
@@ -231,7 +244,7 @@ IF keyword_set(DOCSOL) then begin
   tSdStart   = text(0.7 + hkHSpacing, topLinePosition - (11  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
   t          = text(0.7,              topLinePosition - (12  * hkVSpacing), 'Current Frame = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
   tSdCurrent = text(0.7 + hkHSpacing, topLinePosition - (12  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  
+
   t          = text(0.5,              topLinePosition - (13  * hkVSpacing), 'Int Time', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
   t          = text(0.7,              topLinePosition - (14  * hkVSpacing), 'Row Period      = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
   tRowPeriod = text(0.7 + hkHSpacing, topLinePosition - (14  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
@@ -239,7 +252,7 @@ IF keyword_set(DOCSOL) then begin
   tRowPerInt = text(0.7 + hkHSpacing, topLinePosition - (15  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
   t          = text(0.7,              topLinePosition - (16  * hkVSpacing), 'Int Time (s)  = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
   tIntTime   = text(0.7 + hkHSpacing, topLinePosition - (16  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  
+
   csolHkRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
 ENDIF
 
@@ -257,7 +270,7 @@ csolpixelindex = -1LL
 megsATotalPixelsFound = 0
 megsBTotalPixelsFound = 0
 csolTotalPixelsFound = 0
-csolRowNumberLatest = -1 
+csolRowNumberLatest = -1
 
 ; Prepare image counter for how often to refresh the images
 displayImagesCounterMegsA = 0
@@ -272,35 +285,39 @@ WHILE 1 DO BEGIN
 
   ; Start a timer
   wrapperClock = TIC()
-  
+
   ; Store how many bytes are on the socket
   socketDataSize = (fstat(socketLun)).size
-  
+
   ; Trigger data processing if there's actually something to process
   IF socketDataSize GT 0 THEN BEGIN
-    
+
     ; Read data on the socket
     socketData = bytarr((fstat(socketLun)).size)
     wait, 0.5 ; tune the wait time to reduce CPU load from tiny reads, usually reads abotu 80,000 bytes
     readu, socketLun, socketData
     print,'number of bytes read = '+strtrim(n_elements(socketData),2)
-    
-    ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL. 
+
+    ; write to a binary file of bytes
+    write_raw_tm2_binary, socketData
+
+
+    ; Stuff the new socketData into the buffer. This will work even the first time around when the buffer is !NULL.
     socketDataBuffer = [temporary(socketDataBuffer), temporary(socketData)]
-    
+
     ; Do an efficient search for just the last DEWESoft sync byte
     sync7Indices = where(socketDataBuffer EQ 7, numSync7s)
-  
+
     ; If some 0x07 sync bytes were found, then loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)
     ; and process the data between every set of two verified sync byte patterns
     IF numSync7s GE 2 THEN BEGIN
-      
+
       ; Reset the index of the verified sync patterns
       verifiedSync7Index = !NULL
 ;      verifiedSync7Index = wStartSync[0]
-      
+
       FOR sync7LoopIndex = 0, numSync7s - 1 DO BEGIN
-        
+
         ; Verify the rest of the sync pattern
         IF sync7Indices[0] LT 7 THEN CONTINUE
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 1] NE 6 THEN CONTINUE
@@ -310,17 +327,17 @@ WHILE 1 DO BEGIN
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 5] NE 2 THEN CONTINUE
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 6] NE 1 THEN CONTINUE
         IF socketDataBuffer[sync7Indices[sync7LoopIndex] - 7] NE 0 THEN CONTINUE
-        
-        ; If this is the first syncLoopIndex, then verify this sync pattern and continue to the next sync pattern to determine 
+
+        ; If this is the first syncLoopIndex, then verify this sync pattern and continue to the next sync pattern to determine
         ; the data to process (singleFullDeweSoftPacket) between the two sync patterns
         IF sync7LoopIndex EQ 0 THEN BEGIN
           verifiedSync7Index = sync7Indices[sync7LoopIndex]
           CONTINUE
         ENDIF
-         
+
         ; Store the data to be processed between two DEWESoft sync patterns
         singleFullDeweSoftPacket = socketDataBuffer[verifiedSync7Index - 7:sync7Indices[sync7LoopIndex] - 8]
-               
+
         ;Checking if packet type is 0 (i.e. a data packet) else skip
         packetType = byte2ulong(singleFullDeweSoftPacket[12:12+3])
 
@@ -331,20 +348,24 @@ WHILE 1 DO BEGIN
         ENDIF
 
         ; -= PROCESS DATA =- ;
-        
+
         ; Grab packet samples for all 3 instrument packets
         offsetP1 = 36
         numberOfDataSamplesP1 = byte2ulong(singleFullDeweSoftPacket[offsetP1:offsetP1 + 3])
+        ; debugging 2023 - issue was Altair had P1-P3 set up with scaling (float numbers)
+        ; numberOfDataSamplesP1 *= 2
         offsetP2 = offsetP1 + 4 + sampleSizeDeweSoft * numberOfDataSamplesP1
         numberOfDataSamplesP2 = byte2ulong(singleFullDeweSoftPacket[offsetP2:offsetP2 + 3])
-        
+        ; debugging 2023 - issue was Altair had P1-P3 set up with scaling (float numbers)
+        ; numberOfDataSamplesP2 *= 2
+                ;stop  ;  debug stop
         IF keyword_set(DOCSOL) THEN BEGIN
           offsetP3 = offsetP2 + 4 + sampleSizeDeweSoft * numberOfDataSamplesP2
           numberOfDataSamplesP3 = byte2ulong(singleFullDeweSoftPacket[offsetP3:offsetP3 + 3])
         ENDIF ELSE BEGIN
           numberOfDataSamplesP3 = 0
         ENDELSE
-        
+
         halfwayOffsetP1 = numberOfDataSamplesP1 / 2L + offsetP1 + 4
         halfwayOffsetP2 = numberOfDataSamplesP2 / 2L + offsetP2 + 4
         IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' MEGS-A number of data samples in DEWESoft packet: ' $
@@ -352,14 +373,14 @@ WHILE 1 DO BEGIN
         IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' MEGS-B number of data samples in DEWESoft packet: ' $
                                     + JPMPrintNumber(numberOfDataSamplesP2) + ' First word: ' + JPMPrintNumber(byte2uint(singleFullDeweSoftPacket[halfwayOffsetP2: halfwayOffsetP2 + 1]), /NO_DECIMALS)
 
-        
+
         expectedPacketSize = sampleSizeDeweSoft * (numberOfDataSamplesP1 + numberOfDataSamplesP2 + numberOfDataSamplesP3) + 4L * numberOfInstruments + 44
         IF expectedPacketSize NE n_elements(singleFullDeweSoftPacket) THEN BEGIN
-           message, /INFO, JPMsystime() + ' Measured single DEWESoft packet length not equal to expectation. Expected: ' $ 
+           message, /INFO, JPMsystime() + ' Measured single DEWESoft packet length not equal to expectation. Expected: ' $
                            + JPMPrintNumber(expectedPacketSize, /NO_DECIMAL) + ' bytes but received ' $
                            + JPMPrintNumber(n_elements(singleFullDeweSoftPacket), /NO_DECIMAL) + ' bytes.'
         ENDIF
-        
+
         IF keyword_set(DEBUG) THEN BEGIN
           print, 'Socket:', socketDataSize, byte2ulong(singleFullDeweSoftPacket[8:11]), numberOfDataSamplesP1, $
             byte2uint(singleFullDeweSoftPacket[offsetP1 + 4: offsetP1 + 5]), $
@@ -379,7 +400,7 @@ WHILE 1 DO BEGIN
         if keyword_set(DOMEGSA) then begin
           IF megsAPixelIndex NE megsAPixelIndexBefore THEN BEGIN
             displayImagesCounterMegsA++
-            IF displayImagesCounterMegsA GT frequencyOfImageDisplay THEN BEGIN 
+            IF displayImagesCounterMegsA GT frequencyOfImageDisplay THEN BEGIN
               doMegsAProcessing = 1
               displayImagesCounterMegsA = 0
             ENDIF
@@ -406,7 +427,7 @@ WHILE 1 DO BEGIN
           ENDIF
         ENDIF
 
-        ; -= MANIPULATE DATA AS NECESSARY =- ;        
+        ; -= MANIPULATE DATA AS NECESSARY =- ;
         IF doMegsAProcessing THEN BEGIN
           megsAStatsPixels = megsAImageBuffer[megsAStatisticsBox[0]:megsAStatisticsBox[2], megsAStatisticsBox[1]:megsAStatisticsBox[3]]
 
@@ -437,7 +458,7 @@ WHILE 1 DO BEGIN
           IF megsAPixelIndex MOD 2 NE 0 THEN megsACurrentColumn = (megsAPixelIndex - 1) / 4094L ELSE $
                                              megsACurrentColumn = megsAPixelIndex / 4094L
         ENDIF ; doMegsAProcessing
-        
+
         IF doMegsBProcessing THEN BEGIN
           megsBStatsPixels = megsBImageBuffer[megsBStatisticsBox[0]:megsBStatisticsBox[2], megsBStatisticsBox[1]:megsBStatisticsBox[3]]
 
@@ -469,7 +490,7 @@ WHILE 1 DO BEGIN
                                              megsBCurrentColumn = megsBPixelIndex / 4094L
           IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' MEGS-B pixel index = ' + JPMPrintNumber(megsBPixelIndex)
         ENDIF ; doMegsBProcessing
-        
+
         ; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
 
         !Except = 0 ; Disable annoying divide by 0 messages
@@ -495,7 +516,7 @@ WHILE 1 DO BEGIN
 
           megsARefreshText.String = 'Last refresh: ' + JPMsystime()
         ENDIF ; doMegsAProcessing
-        
+
         IF doMegsBProcessing THEN BEGIN
           ; Update image
           IF keyword_set(noMod256) THEN p1.SetData, megsBImageBuffer ELSE $
@@ -517,7 +538,7 @@ WHILE 1 DO BEGIN
 
           megsBRefreshText.String = 'Last refresh: ' + JPMsystime()
         ENDIF ; doMegsBProcessing
-        
+
         IF doCsolProcessing THEN BEGIN
           ; Update image
           IF keyword_set(noMod256) THEN p3.SetData, csolImageBuffer ELSE $
@@ -527,7 +548,7 @@ WHILE 1 DO BEGIN
           readArrowCSOL.SetData, [csolRowNumberLatest, csolRowNumberLatest], [-30, 0]
 
           csolRefreshText.String = 'Last refresh: ' + JPMsystime()
-          
+
           ; Update hk telemetry
           IF csolHk NE !NULL THEN BEGIN
             tThermDet0.String = JPMPrintNumber(csolHk.thermDet0)
@@ -542,7 +563,7 @@ WHILE 1 DO BEGIN
             tRowPeriod.String = JPMPrintNumber(csolHk.rowPeriod, /NO_DECIMALS)
             tRowPerInt.String = JPMPrintNumber(csolHk.rowPerInt, /NO_DECIMALS)
             tIntTime.String = JPMPrintNumber(csolHk.intTime)
-            
+
             ; Limit check / red/green coloring
             IF csolHk.thermDet0 LT 20 OR csolHk.thermDet0 GT 0 THEN tThermDet0.Color = greenColor ELSE tThermDet0.Color = redColor
             IF csolHk.thermDet1 LT 20 OR csolHk.thermDet1 GT 0 THEN tThermDet1.Color = greenColor ELSE tThermDet1.Color = redColor
@@ -555,17 +576,17 @@ WHILE 1 DO BEGIN
 
             csolHkRefreshText.String = 'Last refresh: ' + JPMsystime()
           ENDIF
-          
+
           csolHk = !NULL
-        ENDIF ; doCsolProcessing        
-        
+        ENDIF ; doCsolProcessing
+
         !Except = 1 ; Re-enable math error logging
 
         ; Set the index of this verified sync pattern for use in the next iteration of the DEWESoft sync7Loop
         verifiedSync7Index = sync7Indices[sync7LoopIndex]
       ENDFOR ; sync7LoopIndex = 0, numSync7s - 1
 
-      ; Now that all processable data has been processed, overwrite the buffer to contain only bytes from the beginning of 
+      ; Now that all processable data has been processed, overwrite the buffer to contain only bytes from the beginning of
       ; last sync pattern to the end of socketDataBuffer
       socketDataBuffer = socketDataBuffer[verifiedSync7Index - 7:-1]
     ENDIF ; If numSync7s GE 2
