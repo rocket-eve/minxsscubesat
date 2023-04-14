@@ -252,7 +252,7 @@ WHILE 1 DO BEGIN
     readu, socketLun, socketData
     IF keyword_set(DEBUG) THEN BEGIN
       print,strtrim(systime(),2)+' bytes read = '+strtrim(n_elements(socketData),2)
-      stop
+      ;stop
     ENDIF
 
     wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
@@ -304,7 +304,8 @@ WHILE 1 DO BEGIN
     ; Store the data to be processed between the DEWESoft start/stop syncs
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[-2]:wStopSync[-1]]
 
-	; +++++ To Do: Could store "singleFullDeweSoftPacket" as binary data in a LOG file
+	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
+    write_raw_tm1_binary, singleFullDeweSoftPacket
 
 
     ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)
