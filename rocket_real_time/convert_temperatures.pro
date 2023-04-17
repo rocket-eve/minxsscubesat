@@ -30,7 +30,7 @@
 ; DLW 3/10/23 Initial creation, double precision
 ;-
 function steinhart_hart, dn_in, r_coef, temp_coef
-  
+
   dn = double(dn_in) ; do not allow 0, this creates a div by zero error
 
   ; R = b/((a/DN) - (b/c)-1) * 1000
@@ -38,7 +38,7 @@ function steinhart_hart, dn_in, r_coef, temp_coef
   ; prevent infinity
   if finite(resistance) eq 0 then return, -273.15 ; cannot convert infinity
   if resistance lt 1e-45 then return, -273.15 ; resistances close to zero would convert to negative infinity
-  
+
   Rlog = alog(resistance) ; temperature is a cubic polynomial in logR
 
   temperature_degc = 1.d / (temp_coef[0] + temp_coef[1]*Rlog + temp_coef[2]*(Rlog^3)) - 273.15
@@ -106,11 +106,11 @@ function convert_temperatures, $
   woods17 = [257.122,-257.199]
 
   ; conversions provided by Bennet Schwab 3/31/23
-  board3_prt = [51.678364, -159.89857]   ; MA? (possibly -183.9 instead)
-  board4_prt = [51.956196, -160.56519] ; MB? (possibly -184.6 instead)
-  board3_diode = [-67.323044, 211.56467] ; MA?
-  board4_diode = [-67.629051, 212.42528] ; MB?
-  
+  board3_prt = [51.678364, -159.89857 - 16.]   ; MA (noise offset needed, 22C in lab, 16C at WSMR)
+  board4_prt = [51.956196, -160.56519 - 16.] ; MB (noise offset needed, 22C in lab, 16C at WSMR)
+  board3_diode = [-67.323044, 211.56467] ; MA
+  board4_diode = [-67.629051, 212.42528] ; MB
+
   if keyword_set(megsp_temp) then begin
      ;R_therm_MEGSP = woods14[1]/((woods14[0]/(raw))-(woods14[1]/woods14[2])-1)*1000
      ;t_MEGSP = 1/(woods7[0]+woods7[1]*alog(R_therm_MEGSP)+woods7[2]*((alog(R_therm_MEGSP))^3))-273.15
