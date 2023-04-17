@@ -45,14 +45,14 @@ t =     text(0.8, graphicInfo.topLinePosition, 'MEGS A Heater = ', ALIGNMENT = 1
 ta3 =   text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition, '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 t =     text(0.8, graphicInfo.topLinePosition - (1 * graphicInfo.textVSpacing), 'MEGS B Heater = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta15 =  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (1 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.8, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), 'MEGS A CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.8, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), 'MEGS A CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta19 =  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.8, graphicInfo.topLinePosition - (3 * graphicInfo.textVSpacing), 'MEGS B CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.8, graphicInfo.topLinePosition - (3 * graphicInfo.textVSpacing), 'MEGS B CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta20 =  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (3 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
-t =     text(0.8, graphicInfo.topLinePosition - (4 * graphicInfo.textVSpacing), 'MEGS A CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.8, graphicInfo.topLinePosition - (4 * graphicInfo.textVSpacing), 'MEGS A CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta19b=  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (4 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.8, graphicInfo.topLinePosition - (5 * graphicInfo.textVSpacing), 'MEGS B CCD Diode Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.8, graphicInfo.topLinePosition - (5 * graphicInfo.textVSpacing), 'MEGS B CCD PRT Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta20b=  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (5 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
 t =     text(0.8, graphicInfo.topLinePosition - (7 * graphicInfo.textVSpacing), 'MEGS A FF Lamp = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
