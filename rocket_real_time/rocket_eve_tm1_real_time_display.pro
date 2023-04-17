@@ -154,18 +154,6 @@ socketDataBuffer = !NULL
 
 ; Mission specific setup. Edit this to tailor data.
 ; e.g., instrument calibration arrays such as gain to be used in the PROCESS DATA section below
-;36.336
-;synctype = [0,0,0,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; Index which channels are synchronous (0) or async (1) corresponding to channel order pulled
-;megsp_temp=0,megsa_htr=0,xrs_5v=0,csol_5v=1,slr_pressure=0,cryo_cold=0,megsb_htr=0,xrs_temp=0,megsa_ccd_temp=0,megsb_ccd_temp=1,cryo_hot=1,exprt_28v=1,vac_valve_pos=1,hvs_pressure=1,exprt_15v=1,fpga_5v=1,tv_12v=1,megsa_ff_led=1,megsb_ff_led=1,exprt_bus_cur=0,sdoor_pos=1,tm_exp_batt_volt=0,esp_fpga_time=1,esp_rec_counter=1
-;esp1=1,esp2=1,esp3=1,esp4=1
-;esp5=1,esp6=1,esp7=1,esp8=1
-;esp9=1,megsp_fpga_time=1,megsp1=1,megsp2=1
-
-;36.353
-;synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; 35 items
-;megsp_temp=0,megsa_htr=0,**xrs_5v=0,slr_pressure=0,cryo_cold=0,megsb_htr=0,xrs_temp=0,megsa_ccd_temp=0,megsb_ccd_temp=1,cryo_hot=1,**exprt_28v=1,vac_valve_pos=1,hvs_pressure=1,**exprt_15v=1,**fpga_5v=1,tv_12v=1,megsa_ff_led=1,megsb_ff_led=1,**sdoor_pos=1,exprt_bus_cur=0,tm_exp_batt_volt=0,esp_fpga_time=1,esp_rec_counter=1
-;esp1=1,esp2=1,esp3=1,esp4=1,esp5=1,esp6=1,esp7=1,esp8=1,esp9=1,
-;megsp_fpga_time=1,megsp1=1,megsp2=1
 
 ;36.389
 synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; Index which channels are synchronous (0) or async (1) corresponding to channel order pulled
