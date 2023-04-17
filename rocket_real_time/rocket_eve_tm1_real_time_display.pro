@@ -80,12 +80,14 @@
 ;   2023-03-10: Don Woodraska Updated for 36.389, calling convert_temeperatures
 ;   2023-03-30: Don Woodraska Added test_display_only keyword to allow repositioning items on the displays
 ;   2023-04-12: Don Woodraska Cleanup, removed commented code, refactored to remove altair channels in variable names
+;	2023-04-15: Tom Woods, fixed reading TM DeweSoft packets (data offsets) & using largest packet
 ;
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
                                       DEBUG=DEBUG, LIGHT_BACKGROUND=LIGHT_BACKGROUND, frequencyOfImageDisplay=frequencyOfImageDisplay, $
                                       test_display_only=test_display_only, record_binary=record_binary, playback=playback
 
+; DEBUG levels: 0 = off, 1 = data messages, 2 = detailed packet list
 debug=1
 
 ; Defaults
@@ -185,8 +187,8 @@ analogMonitorsStructure = {megsp_temp: 0.0, megsa_htr: 0.0, xrs_5v:0.0,$
   ; added megsa2 & b2 temps 4/10/23 DLW
   cryo_hot:0.0,exprt_28v:0.0,$
   vac_valve_pos:0.0,hvs_pressure:0.0,exprt_15v:0.0,fpga_5v:0.0,$
-  tv_12v:0.0,megsa_ff_led:0.0,megsb_ff_led:0.0,sdoor_pos:0.0,$
-  exprt_bus_cur:0.0,tm_exp_batt_volt:0.0, $
+  tv_12v:0.0,megsa_ff_led:0.0,megsb_ff_led:0.0, $
+  exprt_bus_cur:0.0, sdoor_pos:0.0, tm_exp_batt_volt:0.0, $
   ; serial data starts here
   esp_fpga_time:0.0,esp_rec_counter:0.0,$
   esp1:0.0,esp2:0.0,esp3:0.0,esp4:0.0,esp5:0.0,esp6:0.0,esp7:0.0,esp8:0.0,esp9:0.0,$
@@ -196,7 +198,8 @@ analogMonitorsStructure = {megsp_temp: 0.0, megsa_htr: 0.0, xrs_5v:0.0,$
 ; for the first part, the last part is serial data broken out of
 ; stream s2 (ESPSerialStream) and s3 (MEGSPSerialStream) in 36.389
 
-defAnalogMonitorStructure = define_analog_monitor_structure()
+; this alternative way to define analog monitor structure is not used
+; defAnalogMonitorStructure = define_analog_monitor_structure()
 
 ; Initialize invalid Dewesoft packet counters
 stale_analog = 0
@@ -215,14 +218,14 @@ wb = window(DIMENSIONS = [400,750], /NO_TOOLBAR, LOCATION = [0, 0], BACKGROUND_C
 ; initialize tm1 display
 ; start with serial3 (ESP) data
 position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
-                                  s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, $
-                                  s4_time, s4_megsp1, s4_megsp2, monitorsSerialRefreshText, $
-                                  graphicInfo=graphicInfo
+                    s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, $
+                    s4_time, s4_megsp1, s4_megsp2, monitorsSerialRefreshText, $
+                    graphicInfo=graphicInfo
 
 
 ; Analog monitor window
 ; Displays limit checked hk
-wa = window(DIMENSIONS = [1000, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
+wa = window(DIMENSIONS = [1200, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
 
 position_tm1_analog_on_window, t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
                                t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, t_megsa_ff_led, t_megsb_ff_led, t_MEGSP_temp, $
@@ -259,13 +262,13 @@ WHILE 1 DO BEGIN
       readu, socketLun, socketData
     endif else socketData = playback_dewesoft_packet(/tm1)
 
-    
+
     IF keyword_set(DEBUG) THEN BEGIN
       print,strtrim(systime(),2)+' bytes read = '+strtrim(n_elements(socketData),2)
       ;stop
     ENDIF
 
-    wait,1
+    wait,0.5
     ;wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
 
     ; make windows stale if no updates for 10 seconds
@@ -304,24 +307,33 @@ WHILE 1 DO BEGIN
     wStopSync = wStartSync[1:*] - 1 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
 
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
+	;   2023 enhancement: use largest packet in DeweSoft packet-group (previously used last packet)
+	; best_packet = -2L
+	packets_length =  shift(wStartSync,-1) - wStartSync
+	packets_length[-1] =  0
+	temp = max( packets_length, best_packet)
+	; stop, 'DEBUG packets_length and best_packet ...'
 
     ; Read packet type and if it's not our data (type 0) then ... something
-    packetType = byte2ulong(socketDataBuffer[wStartSync[-2]+12:wStartSync[-2]+12+3])
+    packetType = byte2ulong(socketDataBuffer[wStartSync[best_packet]+12:wStartSync[best_packet]+12+3])
     IF packetType NE 0 THEN BEGIN
       message, /INFO, 'ERROR: PackerType is incorrect - fatal - cannot continue :'+strtrim(packetType,2)
       STOP
     ENDIF
 
     ; Store the data to be processed between the DEWESoft start/stop syncs
-    singleFullDeweSoftPacket = socketDataBuffer[wStartSync[-2]:wStopSync[-1]]
-    
+    singleFullDeweSoftPacket = socketDataBuffer[wStartSync[best_packet]:wStartSync[best_packet+1]-1]
+
 ;stop
 	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
     if keyword_set(record_binary) then write_raw_tm1_binary, singleFullDeweSoftPacket
 
-    ;print_dewesoft_header, singleFullDeweSoftPacket
+    if (debug ge 2) then begin
+    	print_dewesoft_header, singleFullDeweSoftPacket
+    	print_dewesoft_data, singleFullDeweSoftPacket, /ASYNC
+	endif
 
-    ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06)
+    ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07)
     ; and process the data between every set of two verified sync byte patterns
     IF numSync7s GE 2 THEN BEGIN
 
@@ -338,18 +350,28 @@ WHILE 1 DO BEGIN
         samplesize = []
 
         ; Grab packet samples
-        FOR i = 0, n_elements(synctype)-13 DO BEGIN ; JPM: Why -13?
+        ; HardCode number of channels
+        ;num_channels = n_elements(synctype)-13  ; The -13 is because 36.389 has fewer channels
+        num_channels = 25
+
+        FOR i = 0, num_channels-1 DO BEGIN
           IF i EQ 0 THEN BEGIN
-            offsets = [offsets, 36] ; Header of Dewesoft packet is 36 bytes long until the first packet size
+            offsets = [offsets, 36L] ; Header of Dewesoft packet is 36 bytes long until the first packet size
             samplesize = [samplesize, byte2ulong(singleFullDeweSoftPacket[offsets[i]:offsets[i] + 3])] ; Sample size is the next long word
           ENDIF ELSE BEGIN
             IF synctype[i-1] EQ 0 THEN BEGIN
-              sampleSizeDeweSoft = 2 ; This is the multiplication factor for synchronus data to get the data channel size
+              sampleSizeDeweSoft = 2L ; This is the multiplication factor for synchronus data to get the data channel size
             ENDIF ELSE BEGIN ; in 36.389 everything is asynchronous
-              sampleSizeDeweSoft = 10 ; This is the multiplication factor for asynchronus data to get the data channel size
+              sampleSizeDeweSoft = 10L ; This is the multiplication factor for asynchronus data to get the data channel size
             ENDELSE
+
+            ; SPECIAL CASE for  36.389 on 4/15/23 - this could be fixed in Altair definition for Ch 22
+            ;     CH 22 is Scaled Data = float = 4-bytes (2 more than int)
+            ;	  (i eq 23) is for calculating CH 23 offset  using CH 22 sample size
+            if (i eq 23) then sampleSizeDeweSoft = 12L
+
             IF samplesize[i-1] EQ 0 THEN BREAK ; Handle when dewesoft pads packets for some reason and we can no longer get the correct offsets
-            offsets = [offsets, offsets[i-1] + 4 + sampleSizeDeweSoft * samplesize[i-1]]
+            offsets = [offsets, offsets[i-1] + 4L + sampleSizeDeweSoft * samplesize[i-1]]
             samplesize = [samplesize, byte2ulong(singleFullDeweSoftPacket[offsets[i]:offsets[i] + 3])]
           ENDELSE
         ENDFOR
@@ -359,6 +381,8 @@ WHILE 1 DO BEGIN
         ; rocket_eve_tm1_read_packets actually processes the channel data using offsets and sample size and passes back a struct with our data
         analogMonitors = rocket_eve_tm1_read_packets(singleFullDeweSoftPacket, analogMonitorsStructure, offsets, samplesize, monitorsRefreshText, monitorsSerialRefreshText, $
                                                      stale_analog, stale_serial, sdoor_state,sdoor_history)
+
+		if (debug ge 2) then stop, 'DEBUG analogMonitors result...'
 
         dewesoftcounter += 1
 
@@ -373,15 +397,17 @@ WHILE 1 DO BEGIN
           XRS1_temp = convert_temperatures( analogMonitors.xrs_temp, /xrs_temp ) ; NOT USED?
           Cryo_Hotside_temp = convert_temperatures( analogMonitors.cryo_hot, /cryo_hot )
           cryo_coldside_temp = convert_temperatures( analogMonitors.cryo_cold, /cryo_cold )
-          megsa_ccd_prt_temp = convert_temperatures( analogMonitors.megsa_ccd_temp1, /megsa_ccd_prt )
-          megsb_ccd_prt_temp = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_prt )
-          megsa_ccd_diode_temp = convert_temperatures( analogMonitors.megsa_ccd_temp2, /megsa_ccd_diode )
-          megsb_ccd_diode_temp = convert_temperatures( analogMonitors.megsb_ccd_temp2, /megsb_ccd_diode )
+          megsa_ccd_prt_temp = convert_temperatures( analogMonitors.megsa_ccd_temp2, /megsa_ccd_prt )
+          megsb_ccd_prt_temp = convert_temperatures( analogMonitors.megsb_ccd_temp2, /megsb_ccd_prt )
+          megsa_ccd_diode_temp = convert_temperatures( analogMonitors.megsa_ccd_temp1, /megsa_ccd_diode )
+          megsb_ccd_diode_temp = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_diode )
 
           ; Write data to file if its new
-          IF stale_analog EQ 0 THEN BEGIN
+          if ~keyword_set(playback) then begin
+          	IF stale_analog EQ 0 THEN BEGIN
              write_tm1_to_csv_data_file, file_lun, analogMonitors
-          ENDIF
+            ENDIF
+          endif
 
   ;        ; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
   ;        !Except = 0 ; Disable annoying divide by 0 messages
@@ -399,10 +425,10 @@ WHILE 1 DO BEGIN
           t_cryo_cold.string = jpmprintnumber(cryo_coldside_temp)
           t_fpga_5v.string = jpmprintnumber(analogMonitors.fpga_5v)
           t_tv_12v.string = jpmprintnumber(analogMonitors.tv_12v)
-          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+")"
-          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+")"
-          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+")"
-          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+")"
+          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+"V)"
+          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+"V)"
+          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+"V)"
+          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+"V)"
           t_MEGSP_temp.string = jpmprintnumber(MEGSP_temp)
           t_HVS_Pressure.string = jpmprintnumber(analogMonitors.hvs_pressure)
           ; t_megsa_ff_led and t_megsb_ff_led are updated in the limit checking
@@ -444,18 +470,18 @@ WHILE 1 DO BEGIN
             monitorsRefreshText.font_color = blueColor
             set_monitor_window_color, [t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_tv_12v, t_MEGSP_temp,t_cryo_hot], color=fontColor
 
-            get_color_limit, t_exprt_28v, analogMonitors.exprt_28v, rl=0, rh=22
+            get_color_limit, t_exprt_28v, analogMonitors.exprt_28v, rl=22, rh=35
             get_color_limit, t_exp_batt_volt, analogMonitors.tm_exp_batt_volt, rl=22, rh=35
-            get_color_limit, t_exp_bus_cur, analogMonitors.exprt_bus_cur, rl=0.9, rh=2
-            get_color_limit, t_slr_pressure, analogMonitors.slr_pressure, rl=0, rh=.5
+            get_color_limit, t_exp_bus_cur, analogMonitors.exprt_bus_cur, rl=0.8, rh=2
+            get_color_limit, t_slr_pressure, analogMonitors.slr_pressure, rl=0, rh=0.5
             get_color_limit, t_cryo_cold, cryo_coldside_temp, rl=-273, rh=-35
             get_color_limit, t_fpga_5v, analogMonitors.fpga_5v, rl=4.5, rh=5.5
             get_color_limit, t_megsa_htr, analogMonitors.megsa_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, t_megsb_htr, analogMonitors.megsb_htr, rl=-1, rh=0.2, red_string='ON ', green='OFF '
-            get_color_limit, t_ma_ccd_temp1, analogMonitors.megsa_ccd_temp1, rl=0, rh=3, green_string=megsa_ccd_prt_temp, red_string=megsa_ccd_prt_temp
-            get_color_limit, t_mb_ccd_temp1, analogMonitors.megsb_ccd_temp1, rl=0, rh=3, green_string=megsb_ccd_prt_temp, red_string=megsb_ccd_prt_temp
-            get_color_limit, t_ma_ccd_temp2, analogMonitors.megsa_ccd_temp2, rl=0, rh=3, green_string=megsa_ccd_diode_temp, red_string=megsa_ccd_diode_temp
-            get_color_limit, t_mb_ccd_temp2, analogMonitors.megsb_ccd_temp2, rl=0, rh=3, green_string=megsb_ccd_diode_temp, red_string=megsb_ccd_diode_temp
+            get_color_limit, t_ma_ccd_temp1, analogMonitors.megsa_ccd_temp1, rl=3.73, rh=4.33, green_string=megsa_ccd_diode_temp, red_string=megsa_ccd_diode_temp
+            get_color_limit, t_mb_ccd_temp1, analogMonitors.megsb_ccd_temp1, rl=3.73, rh=4.33, green_string=megsb_ccd_diode_temp, red_string=megsb_ccd_diode_temp
+            get_color_limit, t_ma_ccd_temp2, analogMonitors.megsa_ccd_temp2, rl=1.87, rh=2.65, green_string=megsa_ccd_prt_temp, red_string=megsa_ccd_prt_temp
+            get_color_limit, t_mb_ccd_temp2, analogMonitors.megsb_ccd_temp2, rl=1.87, rh=2.65, green_string=megsb_ccd_prt_temp, red_string=megsb_ccd_prt_temp
             get_color_limit, t_megsa_ff_led, analogMonitors.megsa_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
             get_color_limit, t_megsb_ff_led, analogMonitors.megsb_ff_led, rl=-0.1, rh=0.2, red_string='ON ', green='OFF '
 
@@ -503,8 +529,11 @@ WHILE 1 DO BEGIN
   ;message, /INFO, JPMsystime() + ' Finished processing socket data in ' + JPMPrintNumber(TOC(wrapperClock), /SCIENTIFIC_NOTATION) + 'seconds'
 ENDWHILE ; Infinite loop
 
+CLEAN_EXIT:
 ; These lines never get called since the only way to exit the above infinite loop is to stop the code
-free_lun, socketlun
-free_lun, file_lun
+if ~keyword_set(playback) then begin
+	free_lun, socketlun
+	free_lun, file_lun
+endif
 
 END
