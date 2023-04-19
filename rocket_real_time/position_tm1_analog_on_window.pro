@@ -18,9 +18,9 @@ t =     text(0.25, 0.95, 'Payload', FONT_SIZE = graphicInfo.fontSize + 6, FONT_C
 t =     text(0.35, graphicInfo.topLinePosition, 'Exp +28V Monitor = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta23 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition, '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
-t =     text(0.35, graphicInfo.topLinePosition - (1 * graphicInfo.textVSpacing), 'TM Exp Batt Volt [V] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.35, graphicInfo.topLinePosition - (1 * graphicInfo.textVSpacing), 'Internal Batt Volt [V] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta124 = text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (1 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
-t =     text(0.35, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), 'TM Exp Bus Curr [A] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t =     text(0.35, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), 'Internal EXP Curr [A] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta106 = text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (2 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 t =     text(0.35, graphicInfo.topLinePosition - (4 * graphicInfo.textVSpacing), 'Shutter Door = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta82 =  text(0.35 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (4 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
