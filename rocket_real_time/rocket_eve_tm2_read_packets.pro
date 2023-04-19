@@ -137,10 +137,13 @@ IF keyword_set(DOMEGSA) THEN BEGIN
     ; TASK 3: Store pixels in common buffer. (Note: MEGS needs to be “unzipped”). 
     ;
 
+    megsAPixels = ((megsAPacketData + '2000'X) AND '3FFF'X)
+
     FOR packetIndex = 0, n_elements(megsAPacketData) - 1 DO BEGIN
       IF megsAPixelIndex LT 2048LL * 1024LL THEN BEGIN
         megsACcdColumnRow = megsCcdLookupTable[1:2, megsAPixelIndex]
-        megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = ((megsAPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+        ;megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = ((megsAPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+        megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = megsAPixels[packetIndex] ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
         megsAPixelIndex++
       ENDIF
     ENDFOR
@@ -202,10 +205,14 @@ IF keyword_set(DOMEGSB) THEN BEGIN
     ;
     ; TASK 3: Store pixels in common buffer. (Note: MEGS needs to be “unzipped”).
     ;
+
+    megsBPixels = ((megsBPacketData + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+
     FOR packetIndex = 0, n_elements(megsBPacketData) - 1 DO BEGIN
       IF megsBPixelIndex LT 2048LL * 1024LL THEN BEGIN
         megsBCcdColumnRow = megsCcdLookupTable[1:2, megsBPixelIndex]
-        megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = ((megsBPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+        ;megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = ((megsBPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+        megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = megsBPixels[packetIndex]
         megsBPixelIndex++
       ENDIF
     ENDFOR

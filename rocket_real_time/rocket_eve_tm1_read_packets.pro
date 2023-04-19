@@ -91,13 +91,13 @@ debug = 1
                 default, default,  $ ; megsa1 and b1 temps DLW 4/10/23
                 default, default, $ ; added megsa2 and b2 temps DLW 4/10/23
                 default, 10*default, default, default, $
-                0.05, 0.055, default, default, default, 0.0049, 1, 0.01205]
+                0.05, 0.055, default, default, default, 0.0049, 1, 0.01196]
   conv_offset=[0.,0,0,$
   				0,0,0,0, $
   				0., 0., $	;  megsa1 and b1 temps DLW 4/10/23
   				0., 0., $   			; added megsa2 and b2 temps DLW 4/10/23
   				0,0,0,0, $
-  				0,0,0,0,0, 0.09566, 0, 22]
+  				0,0,0,0,0, 0.1008, 0, 21.066]
   ; +++++  special 36.389 4/14/2023 DeweSoft setting for EXP_VOLTAGE (channel 22) that is scaled  already
   conv_factor[22] = 1.0 & conv_offset[22] = 0.0
 ; =============================
@@ -176,9 +176,9 @@ debug = 1
      numB3 = n_elements(byteOffsets) - 3
      packetdata_esp=socketdata[byteOffsets[numB3] + 4L : byteOffsets[numB3] + packetsize[numB3]*2L - 1]
 
-	if (debug ge 2) then begin
-		stop, 'Debug byteOffsets[numB3], packetdata_esp ...'
-	endif
+     if (debug ge 2) then begin
+       stop, 'Debug byteOffsets[numB3], packetdata_esp ...'
+     endif
      ;
      ;TASK 2: Process ESP Serial Data
      ;

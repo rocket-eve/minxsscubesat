@@ -112,7 +112,8 @@ IF ~keyword_set(megsAStatisticsBox) THEN megsAStatisticsBox = [402, 80, 442, 511
 IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 754] ; Corresponds to center block
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
-IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 64;32 ; 64 gives about 1-2 sec
+IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 32 ;32 ; 64 gives about 1-2 sec
+if keyword_set(record_binary) then frequencyOfImageDisplay = 256          ; slow display update during recording
 ; playback metrics
 ; 256 100% 0.5-1 sec/image
 ; 128 100% 0.5-2 sec/image
@@ -300,7 +301,13 @@ WHILE 1 DO BEGIN
 
   ; Store how many bytes are on the socket
   if ~keyword_set(playback) then begin  
-    socketDataSize = (fstat(socketLun)).size
+    read_again:
+    socketDataSize = (fstat(socketLun)).size    
+    if socketDataSize eq 0 then begin
+      print,'zero read'
+      wait, 0.5
+      goto,read_again
+    endif
   endif else socketDataSize=1 ; for playback
 
   ; Trigger data processing if there's actually something to process
@@ -310,7 +317,9 @@ WHILE 1 DO BEGIN
     if ~keyword_set(playback) then begin
       socketData = bytarr((fstat(socketLun)).size)
       wait, 0.05 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
+      ; a wait of 0.02 works, but reads faster than the altair/dewesoft creates packets
       readu, socketLun, socketData
+      ;if systime(1) mod 1 lt 0.1 then print,'number of bytes read = '+strtrim(n_elements(socketData),2) ; debug number of bytes read
     endif else socketData = playback_dewesoft_packet(/tm2)
 
     if keyword_set(debug) then print,'number of bytes read = '+strtrim(n_elements(socketData),2)

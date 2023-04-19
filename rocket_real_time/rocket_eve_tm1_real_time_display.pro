@@ -80,7 +80,7 @@
 ;   2023-03-10: Don Woodraska Updated for 36.389, calling convert_temeperatures
 ;   2023-03-30: Don Woodraska Added test_display_only keyword to allow repositioning items on the displays
 ;   2023-04-12: Don Woodraska Cleanup, removed commented code, refactored to remove altair channels in variable names
-;	2023-04-15: Tom Woods, fixed reading TM DeweSoft packets (data offsets) & using largest packet
+;	  2023-04-15: Tom Woods, fixed reading TM DeweSoft packets (data offsets) & using largest packet
 ;
 ;-
 PRO rocket_eve_tm1_real_time_display, port=port, windowSize=windowSize, data_output_path_file_prepend=data_output_path_file_prepend, $
@@ -256,7 +256,8 @@ WHILE 1 DO BEGIN
       ;stop
     ENDIF
 
-    wait,0.5
+
+    if ~keyword_set(playback) then wait,0.5   ;else wait, 0.01
     ;wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
 
     ; make windows stale if no updates for 10 seconds
@@ -295,12 +296,12 @@ WHILE 1 DO BEGIN
     wStopSync = wStartSync[1:*] - 1 ; last one may be wrong (it's the end of the buffer, not necessarily the stop sync
 
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
-	;   2023 enhancement: use largest packet in DeweSoft packet-group (previously used last packet)
-	; best_packet = -2L
-	packets_length =  shift(wStartSync,-1) - wStartSync
-	packets_length[-1] =  0
-	temp = max( packets_length, best_packet)
-	; stop, 'DEBUG packets_length and best_packet ...'
+  	;   2023 enhancement: use largest packet in DeweSoft packet-group (previously used last packet)
+  	; best_packet = -2L
+  	packets_length =  shift(wStartSync,-1) - wStartSync
+  	packets_length[-1] =  0
+  	temp = max( packets_length, best_packet)
+  	; stop, 'DEBUG packets_length and best_packet ...'
 
     ; Read packet type and if it's not our data (type 0) then ... something
     packetType = byte2ulong(socketDataBuffer[wStartSync[best_packet]+12:wStartSync[best_packet]+12+3])
@@ -312,14 +313,15 @@ WHILE 1 DO BEGIN
     ; Store the data to be processed between the DEWESoft start/stop syncs
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[best_packet]:wStartSync[best_packet+1]-1]
 
-;stop
+    ;stop
+
 	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
     if keyword_set(record_binary) then write_raw_tm1_binary, singleFullDeweSoftPacket
 
     if (debug ge 2) then begin
     	print_dewesoft_header, singleFullDeweSoftPacket
     	print_dewesoft_data, singleFullDeweSoftPacket, /ASYNC
-	endif
+    endif
 
     ; If some 0x07 sync bytes were found, THEN loop to verify the rest of the sync byte pattern (0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07)
     ; and process the data between every set of two verified sync byte patterns
@@ -413,10 +415,10 @@ WHILE 1 DO BEGIN
           t_cryo_cold.string = jpmprintnumber(cryo_coldside_temp)
           t_fpga_5v.string = jpmprintnumber(analogMonitors.fpga_5v)
           t_tv_12v.string = jpmprintnumber(analogMonitors.tv_12v)
-          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp1)+"V)"
-          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_diode_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp1)+"V)"
-          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsa_ccd_temp2)+"V)"
-          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_prt_temp)+" ("+jpmprintnumber(analogMonitors.megsb_ccd_temp2)+"V)"
+          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp1) + ")"  ; + "V)"
+          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp1) + ")"  ; + "V)"
+          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp2) + ")"  ; + "V)"
+          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp2) + ")"  ; + "V)"
           t_MEGSP_temp.string = jpmprintnumber(MEGSP_temp)
           t_HVS_Pressure.string = jpmprintnumber(analogMonitors.hvs_pressure)
           ; t_megsa_ff_led and t_megsb_ff_led are updated in the limit checking

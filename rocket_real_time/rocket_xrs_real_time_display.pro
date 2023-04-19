@@ -45,7 +45,7 @@ PRO rocket_xrs_real_time_display, hydraIP = hydraIP, number_of_packets_to_store 
                                   VERBOSE = VERBOSE, LIGHT_BACKGROUND = LIGHT_BACKGROUND
 
 ; Defaults
-IF ~keyword_set(hydraIP) THEN hydraIP = '192.168.50.15'
+IF ~keyword_set(hydraIP) THEN hydraIP = '192.168.50.201'
 IF ~keyword_set(number_of_packets_to_store) THEN number_of_packets_to_store = 12
 IF ~keyword_set(data_cadence) THEN data_cadence = 3. ; seconds/packet
 IF keyword_set(time_window_to_store) THEN number_of_packets_to_store = time_window_to_store / data_cadence ; time_window_to_store in seconds
