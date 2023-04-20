@@ -136,7 +136,7 @@ if ~keyword_set(playback) then begin
   get_lun, socketLun
 
   ; Prepare output file
-  open_tm1_csv_data_file_for_writing, file_lun
+  ; open_tm1_csv_data_file_for_writing, file_lun
 
   ; Wait for the connection from DEWESoft to be detected
   isConnected = 0
@@ -156,12 +156,12 @@ socketDataBuffer = !NULL
 ; e.g., instrument calibration arrays such as gain to be used in the PROCESS DATA section below
 
 ;36.389
-synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; Index which channels are synchronous (0) or async (1) corresponding to channel order pulled
+synctype = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] ; Index which channels are synchronous (0) or async (1) corresponding to channel order pulled
 ;-- megsp_temp=0, megsa_htr=0, xrs_5v=0, slr_pressure=0, cryo_cold=0, megsb_htr=0, xrs_temp=0, megsa_ccd_temp=0, megsb_ccd_temp=1, cryo_hot=1,
 ;-- exprt_28v=1, vac_valve_pos=1, hvs_pressure=1, exprt_15v=1, fpga_5v=1, tv_12v=1, megsa_ff_led=1, megsb_ff_led=1,
 ;-- sdoor_pos=1, exprt_bus_cur=0, tm_exp_batt_volt=0,
 ;-- esp_fpga_time=1, esp_rec_counter=1, esp1=1, esp2=1, esp3=1, esp4=1, esp5=1, esp6=1, esp7=1, esp8=1, esp9=1,
-;-- megsp_fpga_time=1, megsp1=1, megsp2=1
+;-- megsp_fpga_time=1, megsp1=1, megsp2=1, skintemp
 
 ; door history
 sdoor_history=lonarr(10)
@@ -176,7 +176,7 @@ analogMonitorsStructure = {megsp_temp: 0.0, megsa_htr: 0.0, xrs_5v:0.0,$
   cryo_hot:0.0,exprt_28v:0.0,$
   vac_valve_pos:0.0,hvs_pressure:0.0,exprt_15v:0.0,fpga_5v:0.0,$
   tv_12v:0.0,megsa_ff_led:0.0,megsb_ff_led:0.0, $
-  exprt_bus_cur:0.0, sdoor_pos:0.0, tm_exp_batt_volt:0.0, $
+  exprt_bus_cur:0.0, sdoor_pos:0.0, tm_exp_batt_volt:0.0, skin_temp:0.0, $
   ; serial data starts here
   esp_fpga_time:0.0,esp_rec_counter:0.0,$
   esp1:0.0,esp2:0.0,esp3:0.0,esp4:0.0,esp5:0.0,esp6:0.0,esp7:0.0,esp8:0.0,esp9:0.0,$
@@ -216,14 +216,14 @@ position_tm1_esp_megsp_on_window, s3_time, s3_cnt, $
 wa = window(DIMENSIONS = [1200, 750], /NO_TOOLBAR, LOCATION = [406, 0], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'EVE Rocket 36.389 Analog Monitors')
 
 position_tm1_analog_on_window, t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
-                               t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, t_megsa_ff_led, t_megsb_ff_led, t_MEGSP_temp, $
+                               t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, t_megsa_ff_led, t_megsb_ff_led, t_MEGSP_temp, t_skintemp, $
                                monitorsRefreshText, $
                                graphicInfo=graphicInfo
 
 serialTextObjArray = [monitorsSerialRefreshText, s3_time, s3_cnt, s3_esp1, s3_esp2, s3_esp3, s3_esp4, s3_esp5, s3_esp6, s3_esp7, s3_esp8, s3_esp9, s4_time, s4_megsp1, s4_megsp2]
 
 analogTextObjArray = [t_exprt_28v, t_exp_batt_volt, t_exp_bus_cur, t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_slr_pressure, t_cryo_cold, t_cryo_hot, t_fpga_5v, t_tv_12v, $
-  t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, t_megsa_ff_led, t_megsb_ff_led, t_MEGSP_temp, monitorsRefreshText]
+  t_megsa_htr, t_megsb_htr, t_ma_ccd_temp1, t_mb_ccd_temp1, t_ma_ccd_temp2, t_mb_ccd_temp2, t_megsa_ff_led, t_megsb_ff_led, t_MEGSP_temp, t_skintemp, monitorsRefreshText]
 
 if keyword_set(test_display_only) then stop
 
@@ -257,7 +257,7 @@ WHILE 1 DO BEGIN
     ENDIF
 
 
-    if ~keyword_set(playback) then wait,0.5   ;else wait, 0.01
+    if ~keyword_set(playback) then wait,0.5   
     ;wait, 0.05 ; Tune this so that the above print statement is telling you that you get ~18,000-20,000 bytes per read (or so)
 
     ; make windows stale if no updates for 10 seconds
@@ -297,11 +297,9 @@ WHILE 1 DO BEGIN
 
     ; Prepare to include the start sync itself in the full Dewesoft packet -- wStartSync is now the index of 0
   	;   2023 enhancement: use largest packet in DeweSoft packet-group (previously used last packet)
-  	; best_packet = -2L
   	packets_length =  shift(wStartSync,-1) - wStartSync
   	packets_length[-1] =  0
   	temp = max( packets_length, best_packet)
-  	; stop, 'DEBUG packets_length and best_packet ...'
 
     ; Read packet type and if it's not our data (type 0) then ... something
     packetType = byte2ulong(socketDataBuffer[wStartSync[best_packet]+12:wStartSync[best_packet]+12+3])
@@ -312,8 +310,6 @@ WHILE 1 DO BEGIN
 
     ; Store the data to be processed between the DEWESoft start/stop syncs
     singleFullDeweSoftPacket = socketDataBuffer[wStartSync[best_packet]:wStartSync[best_packet+1]-1]
-
-    ;stop
 
 	  ; store "singleFullDeweSoftPacket" as binary data in a LOG file
     if keyword_set(record_binary) then write_raw_tm1_binary, singleFullDeweSoftPacket
@@ -341,8 +337,7 @@ WHILE 1 DO BEGIN
 
         ; Grab packet samples
         ; HardCode number of channels
-        ;num_channels = n_elements(synctype)-13  ; The -13 is because 36.389 has fewer channels
-        num_channels = 25
+        num_channels = 26
 
         FOR i = 0, num_channels-1 DO BEGIN
           IF i EQ 0 THEN BEGIN
@@ -355,10 +350,6 @@ WHILE 1 DO BEGIN
               sampleSizeDeweSoft = 10L ; This is the multiplication factor for asynchronus data to get the data channel size
             ENDELSE
 
-            ; SPECIAL CASE for  36.389 on 4/15/23 - this could be fixed in Altair definition for Ch 22
-            ;     CH 22 is Scaled Data = float = 4-bytes (2 more than int)
-            ;	  (i eq 23) is for calculating CH 23 offset  using CH 22 sample size
-            if (i eq 23) then sampleSizeDeweSoft = 12L
 
             IF samplesize[i-1] EQ 0 THEN BREAK ; Handle when dewesoft pads packets for some reason and we can no longer get the correct offsets
             offsets = [offsets, offsets[i-1] + 4L + sampleSizeDeweSoft * samplesize[i-1]]
@@ -399,11 +390,11 @@ WHILE 1 DO BEGIN
             ENDIF
           endif
 
-  ;        ; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
-  ;        !Except = 0 ; Disable annoying divide by 0 messages
-  ;        t1a.string='MEGSP FPGA Time = '+jpmprintnumber(analogMonitors.megsp_fpga_time)
-  ;        t2a.string='ESP FPGA Time = '+jpmprintnumber(analogMonitors.esp_fpga_time)
-  ;        t2b.string='ESP Record Counter = '+jpmprintnumber(analogMonitors.esp_rec_counter)
+          ;; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
+          ;!Except = 0 ; Disable annoying divide by 0 messages
+          ;t1a.string='MEGSP FPGA Time = '+jpmprintnumber(analogMonitors.megsp_fpga_time)
+          ;t2a.string='ESP FPGA Time = '+jpmprintnumber(analogMonitors.esp_fpga_time)
+          ;t2b.string='ESP Record Counter = '+jpmprintnumber(analogMonitors.esp_rec_counter)
 
           ; We continually update the display as, even if we don't get a new valid Dewesoft packet, the valid data is still in the monitor struct
           ; Window 1 display
@@ -415,15 +406,19 @@ WHILE 1 DO BEGIN
           t_cryo_cold.string = jpmprintnumber(cryo_coldside_temp)
           t_fpga_5v.string = jpmprintnumber(analogMonitors.fpga_5v)
           t_tv_12v.string = jpmprintnumber(analogMonitors.tv_12v)
-          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp1) + ")"  ; + "V)"
-          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp1) + ")"  ; + "V)"
-          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp2) + ")"  ; + "V)"
-          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp2) + ")"  ; + "V)"
+          t_ma_ccd_temp1.string = jpmprintnumber(megsa_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp1) + ")"  
+          t_mb_ccd_temp1.string = jpmprintnumber(megsb_ccd_diode_temp) + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp1) + ")"  
+          t_ma_ccd_temp2.string = jpmprintnumber(megsa_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsa_ccd_temp2) + ")"  
+          t_mb_ccd_temp2.string = jpmprintnumber(megsb_ccd_prt_temp)   + " (" + jpmprintnumber(analogMonitors.megsb_ccd_temp2) + ")"  
+          t_skintemp.string = jpmprintnumber(analogMonitors.skin_temp)
+
           t_MEGSP_temp.string = jpmprintnumber(MEGSP_temp)
           t_HVS_Pressure.string = jpmprintnumber(analogMonitors.hvs_pressure)
           ; t_megsa_ff_led and t_megsb_ff_led are updated in the limit checking
           t_cryo_hot.string = jpmprintnumber(Cryo_Hotside_temp)
-          t_sdoor_state.string = sdoor_state
+          
+          t_sdoor_state.string = sdoor_state + " (" + jpmprintnumber(analogMonitorsStructure.sdoor_pos,/no_decimals) + ")"
+          
           IF ((analogMonitors.vac_valve_pos LE 0.2 AND analogMonitors.vac_valve_pos GT -1) OR (analogMonitors.vac_valve_pos GE 3.3 AND analogMonitors.vac_valve_pos LT 3.6)) THEN BEGIN
             t_vac_valve_pos.string="Moving ("+jpmprintnumber(analogMonitors.vac_valve_pos)+")"
           ENDIF ELSE IF (analogMonitors.vac_valve_pos LE -1 OR analogMonitors.vac_valve_pos GE 3.6) THEN BEGIN
@@ -517,6 +512,7 @@ WHILE 1 DO BEGIN
   ;                                      message, /INFO, JPMsystime() + ' Finished processing socket data in time = ' + JPMPrintNumber(JPMsystime(/SECONDS) - wrapperClock)
   ;ENDIF
   ;message, /INFO, JPMsystime() + ' Finished processing socket data in ' + JPMPrintNumber(TOC(wrapperClock), /SCIENTIFIC_NOTATION) + 'seconds'
+
 ENDWHILE ; Infinite loop
 
 CLEAN_EXIT:

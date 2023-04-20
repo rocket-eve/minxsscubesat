@@ -93,7 +93,7 @@ function convert_temperatures, $
    megsp_temp=megsp_temp, xrs_temp=xrs_temp, cryo_hot=cryo_hot, $
    cryo_cold=cryo_cold, $ ; megsa_ccd_temp=megsa_ccd_temp, megsb_ccd_temp=megsb_ccd_temp,  ; MEGS-A/B CCD TEMP were replaced
    megsa_ccd_prt_temp=megsa_ccd_prt_temp, megsb_ccd_prt_temp=megsb_ccd_prt_temp, $
-   megsa_ccd_diode_temp=megsa_ccd_diode_temp, megsb_ccd_diode_temp=megsb_ccd_diode_temp
+   megsa_ccd_diode_temp=megsa_ccd_diode_temp, megsb_ccd_diode_temp=megsb_ccd_diode_temp 
 
   woods5 = [0.00147408,0.00023701459,1.0839894e-7]
   woods6 = [0.0014051,0.0002369,1.019e-7]

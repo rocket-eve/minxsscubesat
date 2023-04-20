@@ -91,18 +91,15 @@ debug = 1
                 default, default,  $ ; megsa1 and b1 temps DLW 4/10/23
                 default, default, $ ; added megsa2 and b2 temps DLW 4/10/23
                 default, 10*default, default, default, $
-                0.05, 0.055, default, default, default, 0.0049, 1, 0.01196]
+                0.05, 0.055, default, default, default, 0.0049, 1, 0.011963, -0.23242] ; added skin_temp to the end
   conv_offset=[0.,0,0,$
   				0,0,0,0, $
   				0., 0., $	;  megsa1 and b1 temps DLW 4/10/23
   				0., 0., $   			; added megsa2 and b2 temps DLW 4/10/23
   				0,0,0,0, $
-  				0,0,0,0,0, 0.1008, 0, 21.066]
-  ; +++++  special 36.389 4/14/2023 DeweSoft setting for EXP_VOLTAGE (channel 22) that is scaled  already
-  conv_factor[22] = 1.0 & conv_offset[22] = 0.0
-; =============================
+  				0,0,0,0,0, 0.1008, 0, 21.066436, 235.524]
 
-  channel_num=25  ;We should have 25 offsets in a valid Dewesoft packet. One for each pulled channel
+  channel_num=26  ;We should have 26 offsets in a valid Dewesoft packet. One for each pulled channel
 
   serial_num=14   ;Number of serial data points in our monitor structure
   ; serial_num is that last part of analogMonitorsStructure and starts
@@ -134,8 +131,7 @@ debug = 1
         ;This is the data for an individual channel
         loidx = byteOffsets[i] + 4L
         dataSize = 2L
-        ; +++++  special 36.389 4/14/2023 DeweSoft setting for EXP_VOLTAGE (channel 22)
-        if (i eq 22) then dataSize = 4L
+
         hiidx = loidx + (packetsize[i]-1)*dataSize - 1L ; drop last sample
         packetdata = socketdata[loidx:hiidx]
 
@@ -144,8 +140,6 @@ debug = 1
 
         ; just use last two bytes in packetdata
         raw = byte2uint(packetdata[-2:-1])
-        ; +++++  special 36.389 4/14/2023 DeweSoft setting for EXP_VOLTAGE (channel 22)
-        if (i eq 22) then raw =  float(packetdata[-4:-1],0)
         voltageValue = raw*conv_factor[i] + conv_offset[i]
 
         ;Store it to our struct
@@ -160,9 +154,9 @@ debug = 1
      sdoor_history=shift(sdoor_history,1)
      sdoor_history[0]=analogMonitorsStructure.sdoor_pos
 
-     ;check if most values of sdoor_history are above the open threshold or above the closed theshold
+     ;check if most values of sdoor_history are below the open threshold or above the closed theshold
      sdoor_state = "Closed"
-     if median(sdoor_history) gt 500. then begin
+     if median(sdoor_history) lt 500. then begin
         sdoor_state = "Open"
      endif
 

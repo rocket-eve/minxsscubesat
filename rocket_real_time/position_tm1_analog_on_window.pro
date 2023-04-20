@@ -9,7 +9,7 @@
 ; DLW 04/12/23 Created
 ;-
 pro position_tm1_analog_on_window, ta23, ta124, ta106, ta82, ta25, ta26, ta13, ta14, ta22, ta29, ta30, $
-                                   ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, $
+                                   ta3, ta15, ta19, ta20, ta19b, ta20b, ta31, ta32, ta1, t_skintemp, $
                                    monitorsRefreshText, $
                                    graphicInfo=graphicInfo
 
@@ -61,6 +61,9 @@ t =     text(0.8, graphicInfo.topLinePosition - (8 * graphicInfo.textVSpacing), 
 ta32 =  text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (8 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 t =     text(0.8, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), 'MEGS-P Temp [C] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 ta1 =   text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (10 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+
+t =     text(0.8, graphicInfo.topLinePosition - (12 * graphicInfo.textVSpacing), 'Skin Temp [F] = ', ALIGNMENT = 1.0, FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
+t_skintemp = text(0.8 + graphicInfo.textHSpacing, graphicInfo.topLinePosition - (12 * graphicInfo.textVSpacing), '--', FONT_SIZE = graphicInfo.fontSize, FONT_COLOR = graphicInfo.fontColor)
 
 monitorsRefreshText = text(0.5, 0.01, 'Last full refresh: ' + jpmsystime(), COLOR = graphicInfo.blueColor, ALIGNMENT = 0.5,font_size=14)
 

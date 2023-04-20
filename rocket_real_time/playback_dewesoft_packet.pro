@@ -13,7 +13,7 @@ function playback_dewesoft_packet, tm1=tm1, tm2=tm2
   common playback_dewesoft_packet, tmfile, tmfile_lun, filedata, pktnumber, pktstart, pktend, n_pktend
   
   if keyword_set(tm1) then begin
-    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm1_files/rocket_tm1_bin_2023-04-14_16_48_05.bin'
+    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm1_files/rocket_tm1_bin_2023-04-20_10_08_10.bin'
   endif else begin
     tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm2_files/rocket_tm2_bin_2023-04-14_14_24_19.bin'
   endelse
