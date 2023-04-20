@@ -1,5 +1,5 @@
 # minxsscubesat
-Code for use in uplink during SDO-EVE rocket underflights. This set contains lots of changes for 36.383 and bug fixes for 36.353 and prior rockets.
+Code for use in uplink during SDO-EVE rocket underflights. This set contains lots of changes for 36.383 and bug fixes from 36.353 and prior rockets.
 
 There are two sets of code that communicate with the Altairs for TM1 and TM2. 
 Another set exists for communicating over RS-232/serial. 
