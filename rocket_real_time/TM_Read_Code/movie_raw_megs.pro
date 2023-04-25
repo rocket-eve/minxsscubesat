@@ -29,7 +29,7 @@
 pro movie_raw_megs, filename, channel, waittime, data=data, scale=scale, image=image, rocket=rocket, debug=debug
 
 common rocket_common, rocket_number, launch_time, rocket_data_dir
-if not keyword_set(rocket) then rocket=36.353
+if not keyword_set(rocket) then rocket=36.389
 rocket_set_number, rocket
 tzero = launch_time
 
@@ -148,7 +148,7 @@ endif else if (extfile eq 'SAV') then begin
   restore, filename	; expect to have "data" in this save set
   dcnt = n_elements(data)
   if (dcnt eq 0) then begin
-    if rocket eq 36.353 then begin
+    if (rocket eq 36.353) or (rocket eq 36.389) then begin
     	if ch eq "A" then data=adata else data=bdata
     endif else begin
     	if ch eq "A" then data=amegs else data=bmegs
@@ -218,7 +218,14 @@ endif else if (rocket eq 36.336) then begin
     tdark2 = 490.
     dtdark=10.
 endif else if (rocket eq 36.353) then begin
-    ; tzero = 17*3600L+25*60L+0.000D0  ; launch time in UT (TBD)
+    ; tzero = 17*3600L+25*60L+0.000D0  ; launch time in UT
+    tapogee = 250. ; TBD
+    dtlight = 30.
+    tdark1 = 65.
+    tdark2 = 490.
+    dtdark=10.
+endif else if (rocket eq 36.389) then begin
+    ; tzero = 18*3600L+10*60L+0.000D0  ; launch time in UT (TBD)
     tapogee = 250. ; TBD
     dtlight = 30.
     tdark1 = 65.

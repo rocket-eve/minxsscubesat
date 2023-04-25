@@ -71,11 +71,12 @@ fbase = strmid( filename, fb1+1, fb2-fb1-1 ) + '_'
 ;  just use the full input file name
 fbase = filename + '_'
 
-if keyword_set(rocket) then rnum = rocket else rnum = 36.353
-if (rnum ne 36.353) and (rnum ne 36.336) and (rnum ne 36.318) and (rnum ne 36.300) and $
+if keyword_set(rocket) then rnum = rocket else rnum = 36.389
+if (rnum ne 36.389) and (rnum ne 36.353) and $
+		(rnum ne 36.336) and (rnum ne 36.318) and (rnum ne 36.300) and $
 		(rnum ne 36.290) and (rnum ne 36.286) and (rnum ne 36.240) and (rnum ne 36.233) then begin
-  print, 'ERROR: rocket number is not valid, resetting to 36.353'
-  rnum = 36.353
+  print, 'ERROR: rocket number is not valid, resetting to 36.389'
+  rnum = 36.389
 endif
 print, 'Processing for rocket # ', string(rnum,format='(F7.3)')
 
@@ -91,7 +92,8 @@ if (not keyword_set(launchtime)) and (fpos ge 0) then begin
   if (rnum eq 36.300) then launchtime = 13*3600L + 14*60L + 25.1D0
   if (rnum eq 36.318) then launchtime = 19*3600L + 0*60L + 0.0D0	; UT time
   if (rnum eq 36.336) then launchtime = 19*3600L + 0*60L + 0.0D0
-  if (rnum eq 36.353) then launchtime = 17*3600L + 25*60L + 0.0D0  ; TBD !!!
+  if (rnum eq 36.353) then launchtime = 17*3600L + 25*60L + 0.0D0
+  if (rnum eq 36.389) then launchtime = 18*3600L + 10*60L + 0.0D0  ; TBD !!!
   print, 'NOTE:  set launch time for ', strtrim(launchtime,2), ' sec of day'
 endif
 

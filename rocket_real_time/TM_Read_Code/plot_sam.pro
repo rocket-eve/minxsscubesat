@@ -19,7 +19,7 @@
 pro plot_sam, filename, image, data=data, scale=scale, rocket=rocket, sam=sam, debug=debug
 
 common rocket_common, rocket_number, launch_time, rocket_data_dir
-if not keyword_set(rocket) then rocket=36.353
+if not keyword_set(rocket) then rocket=36.389
 rocket_set_number, rocket
 tzero = launch_time
 
@@ -40,7 +40,7 @@ atotal = mnumx * mnumy
   restore, filename	; expect to have "data" in this save set
   dcnt = n_elements(data)
   if (dcnt eq 0) then begin
-    if rocket eq 36.353 then begin
+    if (rocket eq 36.353) or (rocket eq 36.389) then begin
     	data=adata
     endif else begin
     	data=amegs
@@ -143,6 +143,18 @@ endif else if (rocket eq 36.336) then begin
 	endif
 endif else if (rocket eq 36.353) then begin
     ; tzero = 17*3600L+25*60L+0.000D0  ; launch time in UT
+    tapogee = 278.
+    dtlight = 30.
+    tdark1 = 65.
+    tdark2 = 490.
+    dtdark=10.
+    if (n_params() lt 2) then begin
+    	wgd = where( (data.time ge (tapogee-dtlight)) and (data.time le (tapogee+dtlight)) )
+    	image = [wgd[0],wgd[-1]]
+    	print, 'Setting IMAGE range for ', image
+	endif
+endif else if (rocket eq 36.389) then begin
+    ; tzero = 18*3600L+10*60L+0.000D0  ; launch time in UT - PLANNED
     tapogee = 278.
     dtlight = 30.
     tdark1 = 65.

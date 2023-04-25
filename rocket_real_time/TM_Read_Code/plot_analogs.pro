@@ -18,6 +18,8 @@
 ;	3/23/11   Tom Woods   Updated so can read *.sav file instead of binary *.dat file
 ;	4/30/15	  Tom Woods   Added option to make PDF file, indicate Timer functions, and grid lines
 ;	9/3/21	  Tom Woods   Added 36.353 option
+;	4/24/23   Tom Wooods  Added 36.389 option
+;
 ;
 pro plot_analogs, filename, data, xrange=xrange, plotnum=plotnum, tzero=tzero, rocket=rocket, $
 				ccd=ccd, debug=debug, noplot=noplot, pdf=pdf, notimer=notimer, nogrid=nogrid
@@ -30,12 +32,14 @@ if (strlen(filename) lt 1) then begin
   print, 'No filename was given...'
   return
 endif
-rnum = 36.353
+rnum = 36.389
 if keyword_set(rocket) then rnum = rocket
 if (rnum ne 36.275) and (rnum ne 36.233) and (rnum ne 36.240) and (rnum ne 36.258) $
 	and (rnum ne 36.286) and (rnum ne 36.290) and (rnum ne 36.300) $
-	and (rnum ne 36.318) and (rnum ne 36.336) and (rnum ne 36.353) then begin
+	and (rnum ne 36.318) and (rnum ne 36.336) and (rnum ne 36.353) $
+	and (rnum ne 36.389) then begin
   stop, 'STOP:  ERROR with "rnum"...'
+  rnum = 36.389
 endif
 rocket_str = string(rnum,format='(F6.3)')
 ;
@@ -43,6 +47,11 @@ rocket_str = string(rnum,format='(F6.3)')
 ;
 timer_times = [ 52., 53, 82, 83, 90, 452, 459, 469, 500, 530, 580, 585, 586 ]
 timer_names = ['A', 'B', 'D', 'E', 'H', 'G', 'M', 'N', 'F', 'K', 'L', 'P', 'R']
+if (rnum eq 36.389) then begin
+	timer_times[11] = 800.
+	timer_times[12] = 801.
+endif
+
 ;
 ;	Verify timers as follows
 ;		A = MEGSA_FF and MEGSB_FF go from 0.05V to 0.3V (with 0.05V noise)
@@ -171,23 +180,14 @@ endif else if (rnum eq 36.318) then begin
 
   numanalogs = 28L
   atemp = { time: 0.0D0, tm_28v: 0.0, tm_cur: 0.0, exp_28v: 0.0, $
-
     tv_12v: 0.0, tv_pos: 0.0, fpga_5v: 0.0, $
-
     solar_press: 0.0, gate_valve: 0.0, cryo_hot_temp: 0.0, $
-
     xps_tempb: 0.0, megsa_ff: 0.0, megsb_ff: 0.0, $
-
     megsa_ccd_temp: 0.0, megsa_heater: 0.0, megsp_temp: 0.0, $
-
     megsb_ccd_temp: 0.0, megsb_heater: 0.0, xrs_28v: 0.0, $
-
     xps_pos: 0.0, xps_cw: 0.0, xps_ccw: 0.0, $
-
     xrs_tempa: 0.0, xrs_tempb: 0.0, xrs_5v: 0.0, $
-
     shutter_door_pos: 0.0, shutter_door_mon: 0.0, shutter_door_volt: 0.0, $
-
     shutter_door_cur: 0.0 }
 endif else if (rnum eq 36.336) then begin
   ;
@@ -221,6 +221,22 @@ endif else if (rnum eq 36.353) then begin
     megsb_ccd_temp: 0.0, megsb_heater: 0.0, xrs_5v: 0.0, $
     shutter_door_pos: 0.0, shutter_door_mon: 0.0, shutter_door_volt: 0.0, $
     shutter_door_cur: 0.0, shutter_door_open: 0.0, shutter_door_close: 0.0 }
+endif else if (rnum eq 36.389) then begin
+  ;
+  ;   define the TM items for all of the analog monitors
+  ;     X = WD + 3 (CD, -1 for RT), Y = FR - 1
+  ;
+  numanalogs = 30L
+  atemp = { time: 0.0D0, tm_28v: 0.0, tm_cur: 0.0, exp_28v: 0.0, $
+  	hvs_press: 0.0, solar_press: 0.0, exp_15v: 0.0, $
+    tv_12v: 0.0, tv_batt: 0.0, fpga_5v: 0.0, $
+    gate_valve: 0.0, cryo_cold_temp: 0.0, cryo_hot_temp: 0.0, $
+	xrs_tempb: 0.0, megsa_ff: 0.0, megsb_ff: 0.0, $
+    megsa_ccd_temp1: 0.0, megsa_ccd_temp2: 0.0, megsa_heater: 0.0, megsp_temp: 0.0, $
+    megsb_ccd_temp1: 0.0, megsb_ccd_temp2: 0.0, megsb_heater: 0.0, xrs_5v: 0.0, $
+    shutter_door_pos: 0.0, shutter_door_mon: 0.0, shutter_door_volt: 0.0, $
+    shutter_door_cur: 0.0, shutter_door_open: 0.0, shutter_door_close: 0.0, $
+    exp_skin_temp: 0.0 }
 endif
 
 
@@ -307,9 +323,11 @@ else if (rnum eq 36.290) then tz = 18*3600L + 0*60L + 0.4D0 $
 else if (rnum eq 36.300) then tz = 19*3600L + 14*60L + 25.1D0 $
 else if (rnum eq 36.318) then tz = 19*3600L + 0*60L + 0.0D0 $
 else if (rnum eq 36.336) then tz = 19*3600L + 0*60L + 0.0D0 $
+else if (rnum eq 36.353) then tz = 17*3600L + 25*60L + 0.0D0 $
+else if (rnum eq 36.389) then tz = 18*3600L + 10*60L + 0.0D0 $
 else tz = data[0].time
 if keyword_set(tzero) then tz = tzero
-if (data[0].time-tz) lt -3600 then tz=data[0].time
+if abs(data[0].time-tz) gt 1000 then tz=data[0].time + 600.  ; assumes sequence starts at T-600sec
 ptime = (data.time - tz)		; relative time
 xr = [min(ptime),max(ptime)]
 if (xr[1]-xr[0]) gt 1000 then xr = median(ptime)+[-500,500]

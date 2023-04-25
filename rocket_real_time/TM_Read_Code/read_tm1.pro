@@ -52,6 +52,8 @@
 ;		Instrument Changes: XRS (GOES) and SPS_CSOL did not fly. Dual SPS units flew.
 ;			Dual SPS units are SPS_XRS unit with XRS, X55, MECH and  SPS_OWLS unit
 ;
+;	Updated April 2023 for 36.389 for all new TM1 matrix
+;
 pro  read_tm1, filename, cd=cd, launchtime=launchtime, time=time, single=single, $
 				analog=analog, esp=esp, pmegs=pmegs, xps=xps, axs=axs, xrs=xrs, x123=x123, $
 				cmd=cmd, sps_csol=sps_csol, sps_xrs=sps_xrs, sps_owls=sps_owls, $
@@ -97,13 +99,17 @@ fbase = strmid( filename, fb1+1, fb2-fb1-1 ) + '_'
 ;  just use the full input file name
 fbase = filename + '_'
 
-if keyword_set(rocket) then rnum = rocket else rnum = 36.353	; Default of 36.353
-if (rnum ne 36.353) and (rnum ne 36.336) and (rnum ne 36.318) and (rnum ne 36.300) and  $
+if keyword_set(rocket) then rnum = rocket else rnum = 36.389	; Default of 36.389
+if (rnum ne 36.389) and (rnum ne 36.353) and (rnum ne 36.336) and $
+		(rnum ne 36.318) and (rnum ne 36.300) and  $
 		(rnum ne 36.290) and (rnum ne 36.286) and (rnum ne 36.240) and (rnum ne 36.233) then begin
   print, 'ERROR: rocket number is not valid, resetting to 36.353'
-  rnum = 36.353
+  rnum = 36.389
 endif
 print, 'Processing for rocket # ', string(rnum,format='(F7.3)')
+
+; 36.353 Launched on Sept. 9, 2021 (DOY 252) at 17:25:00 UT  (11:25:00 MDT)
+;  36.389 launch plan is May 3, 2023 at 12:10:00 MDT = 18:10:00 UT
 
 if not keyword_set(launchtime) then launchtime=0L
 fpos = strpos( filename, 'flight' )
@@ -117,12 +123,14 @@ if (not keyword_set(launchtime)) and (fpos ge 0) then begin
   if (rnum eq 36.300) then launchtime = 13*3600L + 14*60L + 25.1D0
   if (rnum eq 36.318) then launchtime = 19*3600L + 0*60L + 0.0D0	; UT
   if (rnum eq 36.336) then launchtime = 19*3600L + 0*60L + 0.0D0
-  if (rnum eq 36.3353) then launchtime = 17*3600L + 25*60L + 0.0D0	; guess
+  if (rnum eq 36.353) then launchtime = 17*3600L + 25*60L + 0.0D0
+  if (rnum eq 36.389) then launchtime = 18*3600L + 10*60L + 0.0D0	; planned time
   print, 'NOTE:  set launch time for ', strtrim(launchtime,2), ' sec of day'
 endif else begin
   ; stop, 'DEBUG: Did not set Launch Time (tzero)...'
 endelse
 
+;  36.389 TM1 is all new TM stack (again) and lots of monitor placement changes
 ;  36.353 TM1 is all new TM stack and lots of monitor placement changes
 ;  36.336 TM1 packet size is same as before but some monitor placements changed
 ;  36.233 and 36.240 TM1 packet size and sync are the same but monitor placements are different
@@ -147,7 +155,7 @@ RToffset = -1L		; X offset between CD data and RT data for the "X" value
 ;	Same for 36.240 (5 Mbps) - 2008
 ;
 if (rnum eq 36.233) or (rnum eq 36.240) or (rnum eq 36.286) or (rnum eq 36.290) or (rnum eq 36.300) or $
-		(rnum eq 36.318) or (rnum eq 36.336) or (rnum eq 36.353) then begin
+		(rnum eq 36.318) or (rnum eq 36.336) or (rnum eq 36.353) or (rnum eq 36.389) then begin
  if keyword_set(CD) then begin
   wordmask = '03FF'X
   sync1value = '0100'X
@@ -581,6 +589,32 @@ endif else if (rnum eq 36.353) then begin
     megsb_ccd_temp: 0.0, megsb_heater: 0.0, xrs_5v: 0.0, $
     shutter_door_pos: 0.0, shutter_door_mon: 0.0, shutter_door_volt: 0.0, $
     shutter_door_cur: 0.0, shutter_door_open: 0.0, shutter_door_close: 0.0 }
+endif else if (rnum eq 36.389) then begin
+  ;
+  ;   define the TM items for all of the analog monitors
+  ;     X = WD + 3 (CD, -1 for RT), Y = FR - 1
+  ;
+  numanalogs = 30L
+  axy = [ [80,2], [32,0], [35,6], $  ; A96 (A47=[59,1]), A12, A119
+  	[36,5], [34,3], [35,7], $		; A126, A108, A120
+    [36,1], [35,0], [36,0], $		; A122, A113, A121
+    [36,3], [34,4], [35,5], $		; A124, A109, A118
+    [33,4], [36,2], [36,4], $		; A101, A123, A125
+    [35,2], [34,1], [33,2], [33,0], $	; A115, A106, A99, A97
+    [35,3], [34,2], [34,5], [33,6], $	; A116, A107, A110, A103
+    [44,1], [44,0], [44,4], $		; A15, A14, A18
+    [19,1], [44,5], [44,7], $		; A9, A19, A21
+    [56,2] ]						; A30
+  atemp = { time: 0.0D0, tm_28v: 0.0, tm_cur: 0.0, exp_28v: 0.0, $
+  	hvs_press: 0.0, solar_press: 0.0, exp_15v: 0.0, $
+    tv_12v: 0.0, tv_batt: 0.0, fpga_5v: 0.0, $
+    gate_valve: 0.0, cryo_cold_temp: 0.0, cryo_hot_temp: 0.0, $
+	xrs_tempb: 0.0, megsa_ff: 0.0, megsb_ff: 0.0, $
+    megsa_ccd_temp1: 0.0, megsa_ccd_temp2: 0.0, megsa_heater: 0.0, megsp_temp: 0.0, $
+    megsb_ccd_temp1: 0.0, megsb_ccd_temp2: 0.0, megsb_heater: 0.0, xrs_5v: 0.0, $
+    shutter_door_pos: 0.0, shutter_door_mon: 0.0, shutter_door_volt: 0.0, $
+    shutter_door_cur: 0.0, shutter_door_open: 0.0, shutter_door_close: 0.0, $
+    exp_skin_temp: 0.0 }
 endif
 
 if not keyword_set(CD) then begin
@@ -615,7 +649,9 @@ if arg_present(esp) or keyword_set(esp) then begin
   ewcnt = 0L
   ewlen = numesp*8L
   ewords = uintarr(ewlen)
-  if (rnum eq 36.353) then begin
+  if (rnum eq 36.389) then begin
+  	exy = [24,0,40,1]
+  endif else if (rnum eq 36.353) then begin
   	exy = [44,0,0,1]
   endif else if (rnum eq 36.233) then begin
     exy = [32,0,0,1]
@@ -667,7 +703,9 @@ if arg_present(pmegs) or keyword_set(pmegs) then begin
   pwcnt = 0L
   pwlen = (numpcnt+numpanalog)*8L
   pwords = uintarr(pwlen)
-  if (rnum eq 36.353) then begin
+  if (rnum eq 36.389) then begin
+  	pxy = [38,0,40,1]
+  endif else if (rnum eq 36.353) then begin
   	pxy = [51,0,0,1]
   endif else if (rnum eq 36.233) then begin
     pxy = [33,0,0,1]
@@ -740,7 +778,9 @@ if (arg_present(cmd) or keyword_set(cmd)) and (rnum ge 36.290) then begin
   print, 'Saving CMD Box / FPGA serial data in ', fcmd
   openw,cmdlun,fcmd,/get_lun
   cmdcnt = 0L
-  if (rnum eq 36.353) then BEGIN
+  if (rnum eq 36.389) then BEGIN
+    cmdxy = [40,6,40,8]
+  endif else if (rnum eq 36.353) then BEGIN
     cmdxy = [78,1,0,8]
   endif else if (rnum eq 36.290) or (rnum eq 36.300) or (rnum eq 36.318) or (rnum eq 36.336)  then begin
     cmdxy = [63,0,0,2]
@@ -750,12 +790,15 @@ if (arg_present(cmd) or keyword_set(cmd)) and (rnum ge 36.290) then begin
   endif
 endif
 
-if (arg_present(sps_csol) or keyword_set(sps_csol)) and (rnum eq 36.336) then begin
+; this is also known as PicoSIM-SPS for 36.389
+if (arg_present(sps_csol) or keyword_set(sps_csol)) and ((rnum eq 36.336) or (rnum eq 36.389)) then begin
   fsps = fbase + 'sps_csol' + fend
   print, 'Saving SPS-CSOL serial data in ', fsps
   openw,spslun,fsps,/get_lun
   spscnt = 0L
-  if (rnum eq 36.336) then begin
+   if (rnum eq 36.389) then begin
+    spsxy = [9,0,20,1]
+   endif else if (rnum eq 36.336) then begin
     spsxy = [17,1,0,2]
   endif
   if (not keyword_set(CD)) then begin
@@ -764,12 +807,14 @@ if (arg_present(sps_csol) or keyword_set(sps_csol)) and (rnum eq 36.336) then be
   spslastchar = -1
 endif
 
-if (arg_present(sps_xrs) or keyword_set(sps_xrs)) and (rnum eq 36.353) then begin
+if (arg_present(sps_xrs) or keyword_set(sps_xrs)) and ((rnum eq 36.353) or (rnum eq 36.389)) then begin
   fsps_xrs = fbase + 'sps_xrs' + fend
   print, 'Saving DualSPS XRS-X55 serial data in ', fsps_xrs
   openw,sps_xrs_lun,fsps_xrs,/get_lun
   sps_xrs_cnt = 0L
-  if (rnum eq 36.353) then begin
+  if (rnum eq 36.389) then begin
+    sps_xrs_xy = [8,0,20,1]
+  endif else if (rnum eq 36.353) then begin
     sps_xrs_xy = [8,0,40,1]
   endif
   if (not keyword_set(CD)) then begin
@@ -780,7 +825,7 @@ endif
 
 if (arg_present(sps_owls) or keyword_set(sps_owls)) and (rnum eq 36.353) then begin
   fsps_owls = fbase + 'sps_owls' + fend
-  print, 'Saving DualSPS XRS-X55 serial data in ', fsps_owls
+  print, 'Saving DualSPS OWLS serial data in ', fsps_owls
   openw,sps_owls_lun,fsps_owls,/get_lun
   sps_owls_cnt = 0L
   if (rnum eq 36.353) then begin
