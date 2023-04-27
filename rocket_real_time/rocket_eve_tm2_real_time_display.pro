@@ -113,6 +113,7 @@ IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 75
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
 IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 32 ;32 ; 64 gives about 1-2 sec
+if getenv('HOST') eq 'MacL3036' then frequencyOfImageDisplay = 256
 if keyword_set(record_binary) then frequencyOfImageDisplay = 256          ; slow display update during recording
 ; playback metrics
 ; 256 100% 0.5-1 sec/image
@@ -316,7 +317,7 @@ WHILE 1 DO BEGIN
     ; Read data on the socket
     if ~keyword_set(playback) then begin
       socketData = bytarr((fstat(socketLun)).size)
-      wait, 0.05 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
+      wait, 0.5 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
       ; a wait of 0.02 works, but reads faster than the altair/dewesoft creates packets
       readu, socketLun, socketData
       ;if systime(1) mod 1 lt 0.1 then print,'number of bytes read = '+strtrim(n_elements(socketData),2) ; debug number of bytes read
