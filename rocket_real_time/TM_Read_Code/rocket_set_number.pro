@@ -26,12 +26,14 @@ endif else if rnum eq 36.318 then begin
   launch_time = 19.*3600. + 0.*60. + 0.
 endif else if rnum eq 36.336 then begin
   launch_time = 19.*3600. + 0.*60. + 0.
-endif else if rnum eq 36.336 then begin
-  launch_time = 17.*3600. + 25.*60. + 0.  ; TBD
-endif else begin
-  print, 'WARNING: invalid rocket number, so assuming 36.353'
-  rocket_number = 36.353
+endif else if rnum eq 36.353 then begin
   launch_time = 17.*3600. + 25.*60. + 0.
+endif else if rnum eq 36.389 then begin
+  launch_time = 18.*3600. + 10.*60. + 0.  ; TBD
+endif else begin
+  print, 'WARNING: invalid rocket number, so assuming 36.389'
+  rocket_number = 36.389
+  launch_time = 18.*3600. + 10.*60. + 0.  ; TBD
 endelse
 
 rocket_data_dir = getenv('rocket_dir')

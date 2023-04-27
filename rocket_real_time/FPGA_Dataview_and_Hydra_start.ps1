@@ -41,6 +41,21 @@ function Move-Window-DataView([System.IntPtr]$WindowHandle, [switch]$Top, [switc
   [pInvoke]::MoveWindow($app.MainWindowHandle, $posX, $posY, $width, $height, $true)
 }
 
+function Move-Window-Start([System.IntPtr]$WindowHandle, [switch]$Top, [switch]$Bottom, [switch]$Left, [switch]$Right) {
+  # get the window bounds
+  $rect = New-Object RECT
+  [pInvoke]::GetWindowRect($WindowHandle, [ref]$rect)
+
+  # get which screen the app has been spawned into
+  $activeScreen = [System.Windows.Forms.Screen]::FromHandle($WindowHandle).Bounds
+
+	$posX =0
+	$posY = 0
+	$width = 600
+	$height = 400
+  [pInvoke]::MoveWindow($app.MainWindowHandle, $posX, $posY, $width, $height, $true)
+}
+
 function Move-Window-Putty([System.IntPtr]$WindowHandle, [switch]$Top, [switch]$Bottom, [switch]$Left, [switch]$Right) {
   # get the window bounds
   $rect = New-Object RECT
@@ -210,10 +225,14 @@ PROCESS{
 }
 }
 
+start-sleep -s 1
 clear
+Write-Host "!=== DO NOT INTERACT WITH DISPLAY UNTIL FINISHED MESSAGE APPEARS ===!"
+start-sleep -s 1
+$app = Get-Process -name "FPGA_Dataview_and_Hydra_start"
+Move-Window-Start -WindowHandle $app.MainWindowHandle 
+start-sleep -s 4
 
-Write-Host "======== DO NOT INTERACT WITH DISPLAY UNTIL FINISHED MESSAGE APPEARS ========"
-start-sleep -s 5
 Write-Host "Starting Hydra for XRS+X55"
 
 Set-Location -Path "C:\Users\rocket\Documents\Hydra_2021_XRS_X55\"
@@ -229,6 +248,7 @@ Set-Location -Path "C:\Users\rocket\Documents\DataView_36.389"
 $app = Start-Process "DataViewPC Serial V5.4.6.exe" -PassThru
 start-sleep 2
 Move-Window-DataView -WindowHandle $app.MainWindowHandle    
+
 Start-Sleep 2  
 Add-Type -AssemblyName System.Windows.Forms
 [System.Windows.Forms.SendKeys]::SendWait("^{o}")
@@ -272,13 +292,9 @@ start-sleep 1
 $SendMouseClick::mouse_event(0x00000002, 0, 0, 0, 0);
 $SendMouseClick::mouse_event(0x00000004, 0, 0, 0, 0);
 
-$x = 2757
-$y = 660
-[System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($x, $y)
-start-sleep 3
-$SendMouseClick::mouse_event(0x00000002, 0, 0, 0, 0);
-$SendMouseClick::mouse_event(0x00000004, 0, 0, 0, 0);
-
+start-sleep 1
+[System.Windows.Forms.SendKeys]::SendWait("%{s}{ENTER}")
+start-sleep 1
 
 Write-Host "Starting PuTTY"
 $app = Start-Process "C:\Program Files (x86)\putty.exe" -PassThru
@@ -290,7 +306,8 @@ start-sleep 2
 Move-Window-Putty -WindowHandle $app.MainWindowHandle 
 
 Write-Host "X55/SPS Realtime Display"
-(New-Object -ComObject WScript.Shell).AppActivate((get-process -name "idlde").MainWindowTitle)   
+(New-Object -ComObject WScript.Shell).AppActivate((get-process -name "idlde").MainWindowTitle)  
+[System.Windows.Forms.SendKeys]::SendWait("^{i}") 
 [System.Windows.Forms.SendKeys]::SendWait("^{c}")
 [System.Windows.Forms.SendKeys]::SendWait(".reset{ENTER}")
 start-sleep 1

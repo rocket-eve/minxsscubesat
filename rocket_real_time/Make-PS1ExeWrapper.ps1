@@ -23,6 +23,7 @@
 .PARAMETER NET40
     By default the console app is compiled against .NET 3.5.  If this switch is specified, then it uses .NET 4.0.
 .EXAMPLE
+    .\Make-PS1ExeWrapper.ps1 .\FPGA_Dataview_and_Hydra_stop.ps1 .\FPGA_Dataview_and_Hydra_stop.exe -NET40
     C:\PS> .\Make-PS1ExeWrapper.ps1 .\MyScript.ps1 .\MyScript.exe .\app.ico -Sta
     This creates an console application called MyScript.exe that internally hosts the PowerShell
     engine and runs the script specified by MyScript.ps1.  Optionally the file app.ico is

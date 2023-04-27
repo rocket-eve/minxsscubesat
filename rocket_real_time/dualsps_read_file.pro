@@ -88,7 +88,7 @@ data1 = { jd: 0.0D0, $
 	gps_seconds: 0.0D0, have_rtc: 0, $
 	; variables in DS.CDHA data line
 	time_since_on: 0.0D0, sps_2_5V: 0.0, power_5V: 0.0, power_battery: 0.0, $
-	power_temperature: 0.0, cdh_version: 0.0, have_cdh: 0, $
+	power_temperature: 0.0, sps_3_3V: 0.0, sps_3_3cur: 0.0, cdh_version: 0.0, have_cdh: 0, $
 	cdh_instr_name: '????', cdh_command_info: '????', cdh_command_index: 0, $
 	; variables in DS.ASPS data line
 	sps_time_since_on: 0.0D0, $
@@ -204,7 +204,7 @@ while (not eof(lun)) do begin
 			messages[msg_num].msg_text = strtrim(messages[msg_num].msg_text,2)
 		endif
 		; PROCESS LINKED DATA PACKETS:  DS.CDHA is first linked packet
-		if (darray[0] eq 'DS.nCDH') then begin
+		if (darray[0] eq 'DS.CDHA') then begin
 			; increment to next record - that is, DS.CDHA packets are always first packet
 			if (data[data_num].have_cdh eq 1) then begin
 				data_num += 1L
@@ -250,6 +250,48 @@ while (not eof(lun)) do begin
 				data[data_num].cdh_command_info = darray[8]
 				if (n_elements(darray) gt 10) then data[data_num].cdh_command_index = fix(darray[10])
 			endif
+		endif
+		if (darray[0] eq 'DS.nCDH') then begin
+		  ; increment to next record - that is, DS.CDHA packets are always first packet
+		  if (data[data_num].have_cdh eq 1) then begin
+		    data_num += 1L
+		    ; clear all other packet "have" flags
+		    data[data_num].have_rtc = 0
+		    data[data_num].have_spsa = 0
+		    data[data_num].have_sps1 = 0
+		    data[data_num].have_sps2 = 0
+		    data[data_num].have_ttm = 0
+		    data[data_num].have_mech = 0
+		    data[data_num].have_mech = 0
+		    data[data_num].have_aSIM = 0
+		    data[data_num].have_bSIM = 0
+		    data[data_num].have_cSIM = 0
+		    data[data_num].have_uart = 0
+		    data[data_num].have_x55 = 0
+		  endif
+		  ; parse DS.CDHA data line  (next line is example)
+		  ; DS.CDHA         6.462  2.508  5.004 13.495   22.03 V3.04 OWLS C=0x0000 I=  0      .
+		  if n_elements(darray) lt 11 then continue
+		  data[data_num].have_cdh = 1
+		  data[data_num].time_since_on = double(darray[1])
+		  data[data_num].sps_2_5V = double(darray[2])
+		  data[data_num].power_5V = double(darray[3])
+		  data[data_num].power_battery = double(darray[4])
+		  data[data_num].power_temperature = double(darray[5])
+		  data[data_num].sps_3_3V = double(darray[6])
+		  data[data_num].sps_3_3cur = double(darray[7])
+		  if (theCDHversion le 0) then begin
+		    ; force check for old packet format first
+		    data[data_num].cdh_version = double(strmid(darray[8],1,strlen(darray[8])-1))
+		    ;  save first instance of cdh_version for use by TTM packets
+		    theCDHversion = data[data_num].cdh_version
+		  endif else data[data_num].cdh_version = theCDHversion  ; only read Version # once
+		  if (theCDHversion ge 3.03) then begin
+		    if n_elements(darray) lt 9 then continue
+		    ; also read Instrument Name and command info
+		    data[data_num].cdh_instr_name = darray[9]
+		    data[data_num].cdh_command_info = darray[10]
+		  endif
 		endif
 		if (darray[0] eq 'DS.RTC') then begin
 			; parse DS.RTC line

@@ -41,6 +41,21 @@ function Move-Window-DataView([System.IntPtr]$WindowHandle, [switch]$Top, [switc
   [pInvoke]::MoveWindow($app.MainWindowHandle, $posX, $posY, $width, $height, $true)
 }
 
+function Move-Window-Stop([System.IntPtr]$WindowHandle, [switch]$Top, [switch]$Bottom, [switch]$Left, [switch]$Right) {
+  # get the window bounds
+  $rect = New-Object RECT
+  [pInvoke]::GetWindowRect($WindowHandle, [ref]$rect)
+
+  # get which screen the app has been spawned into
+  $activeScreen = [System.Windows.Forms.Screen]::FromHandle($WindowHandle).Bounds
+
+	$posX =0
+	$posY = 0
+	$width = 600
+	$height = 400
+  [pInvoke]::MoveWindow($app.MainWindowHandle, $posX, $posY, $width, $height, $true)
+}
+
 function Move-Window-Putty([System.IntPtr]$WindowHandle, [switch]$Top, [switch]$Bottom, [switch]$Left, [switch]$Right) {
   # get the window bounds
   $rect = New-Object RECT
@@ -210,10 +225,13 @@ PROCESS{
 }
 }
 
+start-sleep -s 1
 clear
-
-Write-Host "======== DO NOT INTERACT WITH DISPLAY UNTIL FINISHED MESSAGE APPEARS ========"
-start-sleep -s 5
+Write-Host "!=== DO NOT INTERACT WITH DISPLAY UNTIL FINISHED MESSAGE APPEARS ===!"
+start-sleep -s 1
+$app = Get-Process -name "FPGA_Dataview_and_Hydra_stop"
+Move-Window-Stop -WindowHandle $app.MainWindowHandle 
+start-sleep -s 4
 Write-Host "Closing PuTTY"
 start-sleep 1
 stop-process -Name PuTTY
@@ -238,13 +256,18 @@ start-sleep 1
 start-sleep 2
 
 Write-Host "Closing Hydra"
+$signature=@'
+[DllImport("user32.dll",CharSet=CharSet.Auto,CallingConvention=CallingConvention.StdCall)]
+public static extern void mouse_event(long dwFlags, long dx, long dy, long cButtons, long dwExtraInfo);
+'@
+$SendMouseClick = Add-Type -memberDefinition $signature -name "Win32MouseEventNew" -namespace Win32Functions -passThru
 start-sleep 1
 $x = 1200
 $y = 900
 [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($x, $y)
-start-sleep 3
+start-sleep 1
 $SendMouseClick::mouse_event(0x00000002, 0, 0, 0, 0);
-$SendMouseClick::mouse_event(0x00000004, 0, 0, 0, 0);cmd_hw tlmOutFile rollover
+$SendMouseClick::mouse_event(0x00000004, 0, 0, 0, 0);
 [System.Windows.Forms.SendKeys]::SendWait("cmd_hw tlmOutFile rollover{ENTER}")
 sleep 1
 [System.Windows.Forms.SendKeys]::SendWait("^{w}")
@@ -253,7 +276,7 @@ start-sleep 1
 $x = 800
 $y = 600
 [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($x, $y)
-start-sleep 3
+start-sleep 1
 $SendMouseClick::mouse_event(0x00000002, 0, 0, 0, 0);
 $SendMouseClick::mouse_event(0x00000004, 0, 0, 0, 0);
 [System.Windows.Forms.SendKeys]::SendWait("cmd_hw tlmOutFile rollover{ENTER}")
