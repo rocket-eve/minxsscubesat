@@ -384,11 +384,11 @@ WHILE 1 DO BEGIN
           megsb_ccd_diode_temp = convert_temperatures( analogMonitors.megsb_ccd_temp1, /megsb_ccd_diode )
 
           ; Write data to file if its new
-          if ~keyword_set(playback) then begin
-          	IF stale_analog EQ 0 THEN BEGIN
-             write_tm1_to_csv_data_file, file_lun, analogMonitors
-            ENDIF
-          endif
+          ;if ~keyword_set(playback) then begin
+          ;	IF stale_analog EQ 0 THEN BEGIN
+          ;   write_tm1_to_csv_data_file, file_lun, analogMonitors
+          ;  ENDIF
+          ;endif
 
           ;; -= UPDATE PLOT WINDOWS WITH REASONABLE REFRESH RATE =- ;
           ;!Except = 0 ; Disable annoying divide by 0 messages
@@ -453,7 +453,7 @@ WHILE 1 DO BEGIN
             set_monitor_window_color, analogTextObjArray
           ENDIF ELSE BEGIN
             monitorsRefreshText.font_color = blueColor
-            set_monitor_window_color, [t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_tv_12v, t_MEGSP_temp,t_cryo_hot], color=fontColor
+            set_monitor_window_color, [t_sdoor_state, t_vac_valve_pos, t_HVS_Pressure, t_tv_12v, t_MEGSP_temp,t_cryo_hot,t_skintemp], color=fontColor
 
             get_color_limit, t_exprt_28v, analogMonitors.exprt_28v, rl=22, rh=35
             get_color_limit, t_exp_batt_volt, analogMonitors.tm_exp_batt_volt, rl=22, rh=35
