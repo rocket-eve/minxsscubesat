@@ -46,7 +46,7 @@
 
 pro dualsps_plot, filename, channel, surffile, debug=debug, $
   data=data, surfdata=surfdata, plotdata=plotdata, edt=edt, est=est, $
-  quad45=quad45,win=win,xpos=xpos,ypos=ypos,xsize=xsize,ysize=ysize,inst=inst,realtime=realtime
+  quad45=quad45,win=win,xpos=xpos,ypos=ypos,xsize=xsize,ysize=ysize,inst=inst,realtime=realtime,firstsps=firstsps,firstx55=firstx55
 cc=rainbow(7)
   ;
   ; 1.  Check input parameters
@@ -92,15 +92,25 @@ cc=rainbow(7)
     if n_elements(data) gt 10 then begin
       if ch eq 'X55' then begin
         wgood = where( x55_packets.have_x55 eq 1, numgood )
-        if numgood eq 0 then return
-        if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+        if numgood lt 11 then return
+        ;if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+        if firstx55 eq 0 then begin
+          if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+          firstx55 = 1
+        endif 
+        if keyword_set(win) then wset, win
         plot,x55_packets[wgood[-1]].x55_spectra,title='X55 Spectra (@'+strtrim(string(x55_packets[wgood[-1]].X55_TIME_SINCE_ON),2)+')',ytitle='Counts',xtitle='Bin', xrange=[0,512], thick=3
         return
       endif
       if ch eq 'SPS1' then begin
         wgood = where( data.have_sps1 eq 1, numgood )
-        if numgood eq 0 then return
-        if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+        if numgood lt 11 then return
+        ;if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+        if firstsps eq 0 then begin
+          if keyword_set(win) then window,win,title=inst, XPOS=xpos , YPOS=ypos, XSIZE=xsize , YSIZE=ysize
+          firstsps=1
+        endif
+        if keyword_set(win) then wset, win
         plot, data[wgood[-11:-1]].SPS1_TIME_SINCE_ON,data[wgood[-11:-1]].SPS1_QUAD_X , /nodata, yrange=[-1,1], ystyle=1, xmargin=xm, ymargin=ym2, $
           xtitle=xtitle, ytitle='Quad Position', title=" ", xrange=[min(data[wgood[-11:-1]].SPS1_TIME_SINCE_ON),max(data[wgood[-11:-1]].SPS1_TIME_SINCE_ON)], thick=3
         oplot, data[wgood[-11:-1]].SPS1_TIME_SINCE_ON,data[wgood[-11:-1]].SPS1_QUAD_X, color=cc[0], thick=3  ; red
