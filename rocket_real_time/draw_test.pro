@@ -1,19 +1,21 @@
 pro draw_test
 
 p = plot(/test)
-p.title = 'bla' 
-p.xtitle='bla'
+p.title = 'bla title' 
+p.xtitle='bla xtitle'
 
-
-
+t=text(/norm, 0.5, 0.25, 'Text')
+tfont_size=16
 
 x=systime(1)
 for i = 0, 500 do begin
-  p.title = strtrim(i, 2)
-  ;p.xtitle = strtrim(i, 2) + 'abdoifajeoija'
+  ;p.title = strtrim(i, 2) + 'efgh'
+  t.string=strtrim(i,2)
+  ;p.xtitle = strtrim(i, 2) + 'abcd'
 endfor
-print, systime(1) - x 
-print, float(i)/(systime(1)-x)
+print, systime(1) - x,' sec to change text ' + strtrim(i,2)+' loops'
+ups = strtrim(float(i)/(systime(1)-x),2) + ' text updates per second'
+print, ups
 
 ;print, 'new graphics'
 ;p = plot(findgen(10))
