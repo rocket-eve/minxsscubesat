@@ -82,6 +82,7 @@
 ;   (raw data) so that each sample is 2-bytes.  Asynchronous will add time to each
 ;    sample (for 10 bytes), and Scaling will convert to float values (4 bytes).
 ;
+; 2023-April-28, T. Woods:  added /blockhouse option so Windows start on second monitor
 ;
 ;-
 PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRONOUSDATA, windowSize=windowSize, windowSizeCsol=windowSizeCsol, windowSizeCsolHk=windowSizeCsolHk, $
@@ -89,7 +90,7 @@ PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRO
                                       megsAExpectedCentroid=megsAExpectedCentroid, megsBExpectedCentroid=megsBExpectedCentroid, $
                                       frequencyOfImageDisplay=frequencyOfImageDisplay, noMod256=noMod256, $
                                       DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND, $
-                                      playback=playback, record_binary=record_binary
+                                      playback=playback, record_binary=record_binary, blockhouse=blockhouse
 
 ; COMMON blocks for use with rocket_read_tm2_function. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
@@ -113,7 +114,7 @@ IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 75
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
 IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 32 ;32 ; 64 gives about 1-2 sec
-if getenv('HOST') eq 'MacL3036' then frequencyOfImageDisplay = 256
+if getenv('HOST') eq 'MacL3036' then frequencyOfImageDisplay = 512
 if keyword_set(record_binary) then frequencyOfImageDisplay = 256          ; slow display update during recording
 ; playback metrics
 ; 256 100% 0.5-1 sec/image
@@ -174,7 +175,9 @@ topLinePosition = 0.90
 
 ; MEGS-A
 IF keyword_set(DOMEGSA) then begin
-  wa = window(dimensions=windowSize, /NO_TOOLBAR, location=[0, 0], background_color=backgroundColor)
+  a_location = [0,0]
+  if keyword_set(blockhouse) then a_location = [2000,0]
+  wa = window(dimensions=windowSize, /NO_TOOLBAR, location=a_location, background_color=backgroundColor)
   p0 = image(findgen(2048L, 1024L), title='EVE MEGS A', window_title='EVE MEGS A', /CURRENT, margin=[0.1, 0.02, 0., 0.02], rgb_table='Rainbow', font_size=fontSize, font_color=fontColor)
   c0 = colorbar(target=p0, orientation=1, position=[0.85, 0.03, 0.87, 0.98], textpos=1, font_size=fontSize - 2, text_color=fontColor)
   readArrowMegsALeft = arrow([-50., 0], [1023., 1023.], /DATA, color=blueColor, thick=3, /CURRENT)
@@ -197,7 +200,9 @@ ENDIF
 
 ; MEGS-B
 IF keyword_set(DOMEGSB) then begin
-  wb = window(dimensions=windowSize, /NO_TOOLBAR, location=[0, windowSize[1] + 50], background_color=backgroundColor)
+  b_location = [0, windowSize[1] + 50]
+  if keyword_set(blockhouse) then b_location = [2000, windowSize[1] + 50]
+  wb = window(dimensions=windowSize, /NO_TOOLBAR, location=b_location, background_color=backgroundColor)
   p1 = image(findgen(2048L, 1024L), title='EVE MEGS B', window_title='EVE MEGS B', /CURRENT, /NO_TOOLBAR, margin=[0.1, 0.02, 0., 0.02], rgb_table='Rainbow', font_size=fontSize, font_color=fontColor)
   c1 = colorbar(target=p1, orientation=1, position=[0.85, 0.03, 0.87, 0.98], textpos=1, font_size=fontSize - 2, text_color=fontColor)
   readArrowMegsBLeft = arrow([-50., 0], [1023., 1023.], /DATA, color=redColor, thick=3, /CURRENT)
@@ -220,7 +225,9 @@ ENDIF
 ; CSOL
 IF keyword_set(DOCSOL) then begin
     ;REMOVE /NO_TOOLBAR if want interactive cursor to tell you the pixel location of cursor (useful for STIM LAMP test)
-  wc = window(DIMENSIONS = windowSizeCsol, /NO_TOOLBAR, LOCATION = [0, 2 * windowSize[1] + 78], BACKGROUND_COLOR = backgroundColor)
+  c_location = [0, 2 * windowSize[1] + 78]
+  if keyword_set(blockhouse) then c_location = [2000, 2 * windowSize[1] + 78]
+  wc = window(DIMENSIONS = windowSizeCsol, /NO_TOOLBAR, LOCATION = c_location, BACKGROUND_COLOR = backgroundColor)
   p3 = image(findgen(2000L, 480L), TITLE = 'CSOL', WINDOW_TITLE = 'CSOL', /CURRENT, MARGIN = [0.1, 0.02, 0.1, 0.02], $
              LOCATION = [windowSizeCsol[0] + 5, 0], RGB_TABLE = 'Rainbow', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
   c3 = colorbar(TARGET = p3, ORIENTATION = 1, POSITION = [0.91, 0.18, 0.93, 0.82], TEXTPOS = 1, FONT_SIZE = fontSize - 6, TEXT_COLOR = fontColor)
@@ -317,7 +324,7 @@ WHILE 1 DO BEGIN
     ; Read data on the socket
     if ~keyword_set(playback) then begin
       socketData = bytarr((fstat(socketLun)).size)
-      wait, 0.5 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
+      if keyword_set(blockhouse) then wait, 0.2 else wait, 0.5 ; tune the wait time to reduce CPU load from tiny reads, usually reads about 80,000 bytes
       ; a wait of 0.02 works, but reads faster than the altair/dewesoft creates packets
       readu, socketLun, socketData
       ;if systime(1) mod 1 lt 0.1 then print,'number of bytes read = '+strtrim(n_elements(socketData),2) ; debug number of bytes read

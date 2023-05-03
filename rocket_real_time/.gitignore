@@ -1,0 +1,3 @@
+# exclude program database files for NUC startup/shutdowns
+*.pdb
+*.exe
