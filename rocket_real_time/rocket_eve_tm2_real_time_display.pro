@@ -83,20 +83,21 @@
 ;    sample (for 10 bytes), and Scaling will convert to float values (4 bytes).
 ;
 ; 2023-April-28, T. Woods:  added /blockhouse option so Windows start on second monitor
+; 2023-May-15, D. Woodraska: Commented out CSOL code, ready for removal
 ;
 ;-
 PRO rocket_eve_tm2_real_time_display, port=port, IS_ASYNCHRONOUSDATA=IS_ASYNCHRONOUSDATA, windowSize=windowSize, windowSizeCsol=windowSizeCsol, windowSizeCsolHk=windowSizeCsolHk, $
                                       megsAStatisticsBox=megsAStatisticsBox, megsBStatisticsBox=megsBStatisticsBox, $
                                       megsAExpectedCentroid=megsAExpectedCentroid, megsBExpectedCentroid=megsBExpectedCentroid, $
                                       frequencyOfImageDisplay=frequencyOfImageDisplay, noMod256=noMod256, $
-                                      DOMEGSA=DOMEGSA,DOMEGSB=DOMEGSB,DOCSOL=DOCSOL, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND, $
+                                      DOMEGSA=DOMEGSA, DOMEGSB=DOMEGSB, DEBUG=DEBUG, VERBOSE=VERBOSE, LIGHT_BACKGROUND=LIGHT_BACKGROUND, $
                                       playback=playback, record_binary=record_binary, blockhouse=blockhouse
 
 ; COMMON blocks for use with rocket_read_tm2_function. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
 COMMON MEGS_A_PERSISTENT_DATA, megsAImageBuffer, megsAImageIndex, megsAPixelIndex, megsATotalPixelsFound
 COMMON MEGS_B_PERSISTENT_DATA, megsBImageBuffer, megsBImageIndex, megsBPixelIndex, megsBTotalPixelsFound
-COMMON CSOL_PERSISTENT_DATA, csolImageBuffer, csolPixelIndex, csolRowNumberLatest, csolTotalPixelsFound, csolNumberGapPixels, csolHk
+;;COMMON CSOL_PERSISTENT_DATA, csolImageBuffer, csolPixelIndex, csolRowNumberLatest, csolTotalPixelsFound, csolNumberGapPixels, csolHk
 COMMON DEWESOFT_PERSISTENT_DATA, sampleSizeDeweSoft, offsetP1, numberOfDataSamplesP1, offsetP2, numberOfDataSamplesP2, offsetP3, numberOfDataSamplesP3 ; Note P1 = MEGS-A, P2 = MEGS-B, P3 = CSOL
 
 ;debug=1
@@ -114,9 +115,9 @@ IF ~keyword_set(megsBStatisticsBox) THEN megsBStatisticsBox = [624, 514, 864, 75
 IF ~keyword_set(megsAExpectedCentroid) THEN megsAExpectedCentroid = [19.6, 215.15] ; Expected for He II 304 Å
 IF ~keyword_set(megsBExpectedCentroid) THEN megsBExpectedCentroid = [120., 120.]
 IF ~keyword_set(frequencyOfImageDisplay) THEN frequencyOfImageDisplay = 32 ;32 ; 64 gives about 1-2 sec
-if getenv('HOST') eq 'MacL3036' then frequencyOfImageDisplay = 512
+if keyword_set(blockhouse) then frequencyOfImageDisplay = 512 ; allow fewer screen draws for the slower blockhouse computer to keep from falling behind
 if keyword_set(record_binary) then frequencyOfImageDisplay = 256          ; slow display update during recording
-; playback metrics
+; playback metrics for frequencyOfImageDisplay (use a relative change)
 ; 256 100% 0.5-1 sec/image
 ; 128 100% 0.5-2 sec/image
 ; 64 100% 1-3 sec/image
@@ -136,7 +137,7 @@ redColor = 'tomato'
 greenColor = 'lime green'
 fontSize = 18
 fontSizeHk = 14
-numberOfInstruments = keyword_set(DOMEGSA) + keyword_set(DOMEGSB) + keyword_set(DOCSOL)
+numberOfInstruments = keyword_set(DOMEGSA) + keyword_set(DOMEGSB) ; + keyword_set(DOCSOL)
 
 ; Open a port that the DEWESoft computer will be commanded to stream to (see PROCEDURE in this code's header)
 if ~keyword_set(playback) then begin
@@ -222,58 +223,58 @@ IF keyword_set(DOMEGSB) then begin
   megsBRefreshText =     text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), color=redColor, alignment=1.0)
 ENDIF
 
-; CSOL
-IF keyword_set(DOCSOL) then begin
-    ;REMOVE /NO_TOOLBAR if want interactive cursor to tell you the pixel location of cursor (useful for STIM LAMP test)
-  c_location = [0, 2 * windowSize[1] + 78]
-  if keyword_set(blockhouse) then c_location = [2000, 2 * windowSize[1] + 78]
-  wc = window(DIMENSIONS = windowSizeCsol, /NO_TOOLBAR, LOCATION = c_location, BACKGROUND_COLOR = backgroundColor)
-  p3 = image(findgen(2000L, 480L), TITLE = 'CSOL', WINDOW_TITLE = 'CSOL', /CURRENT, MARGIN = [0.1, 0.02, 0.1, 0.02], $
-             LOCATION = [windowSizeCsol[0] + 5, 0], RGB_TABLE = 'Rainbow', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
-  c3 = colorbar(TARGET = p3, ORIENTATION = 1, POSITION = [0.91, 0.18, 0.93, 0.82], TEXTPOS = 1, FONT_SIZE = fontSize - 6, TEXT_COLOR = fontColor)
-  readArrowCSOL = arrow([0, 0], [-50, 0], /DATA, COLOR = greenColor, THICK = 3, /CURRENT)
-  t = text(0.09, 0.75, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
-  t = text(0.09, 0.61, 'MUV', FONT_SIZE = fontSizeHk, FONT_COLOR = 'dark violet', ALIGNMENT = 1)
-  t = text(0.09, 0.48, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
-  t = text(0.09, 0.34, 'FUV', FONT_SIZE = fontSizeHk, FONT_COLOR = 'dodger blue', ALIGNMENT = 1)
-  t = text(0.09, 0.21, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
-  csolRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
+;;; CSOL
+;; IF keyword_set(DOCSOL) then begin
+;;     ;REMOVE /NO_TOOLBAR if want interactive cursor to tell you the pixel location of cursor (useful for STIM LAMP test)
+;;   c_location = [0, 2 * windowSize[1] + 78]
+;;   if keyword_set(blockhouse) then c_location = [2000, 2 * windowSize[1] + 78]
+;;   wc = window(DIMENSIONS = windowSizeCsol, /NO_TOOLBAR, LOCATION = c_location, BACKGROUND_COLOR = backgroundColor)
+;;   p3 = image(findgen(2000L, 480L), TITLE = 'CSOL', WINDOW_TITLE = 'CSOL', /CURRENT, MARGIN = [0.1, 0.02, 0.1, 0.02], $
+;;              LOCATION = [windowSizeCsol[0] + 5, 0], RGB_TABLE = 'Rainbow', FONT_SIZE = fontSize, FONT_COLOR = fontColor)
+;;   c3 = colorbar(TARGET = p3, ORIENTATION = 1, POSITION = [0.91, 0.18, 0.93, 0.82], TEXTPOS = 1, FONT_SIZE = fontSize - 6, TEXT_COLOR = fontColor)
+;;   readArrowCSOL = arrow([0, 0], [-50, 0], /DATA, COLOR = greenColor, THICK = 3, /CURRENT)
+;;   t = text(0.09, 0.75, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
+;;   t = text(0.09, 0.61, 'MUV', FONT_SIZE = fontSizeHk, FONT_COLOR = 'dark violet', ALIGNMENT = 1)
+;;   t = text(0.09, 0.48, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
+;;   t = text(0.09, 0.34, 'FUV', FONT_SIZE = fontSizeHk, FONT_COLOR = 'dodger blue', ALIGNMENT = 1)
+;;   t = text(0.09, 0.21, 'Dark', FONT_SIZE = fontSizeHk, FONT_COLOR = 'grey', ALIGNMENT = 1)
+;;   csolRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
 
-  ; CSOL housekeeping data
-  wchk = window(DIMENSIONS = windowSizeCsolHk, /NO_TOOLBAR, LOCATION = [windowSizeCsol[0] + 5, 2 * windowSize[1] + 78], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'CSOL Housekeeping Data')
-  t          = text(0.5,              topLinePosition - (0   * hkVSpacing), 'Temperatures', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
-  t          = text(0.7,              topLinePosition - (1   * hkVSpacing), 'Detector 0 [ºC] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tThermDet0 = text(0.7 + hkHSpacing, topLinePosition - (1   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (2   * hkVSpacing), 'Detector 1 [ºC] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tThermDet1 = text(0.7 + hkHSpacing, topLinePosition - (2   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (3   * hkVSpacing), 'FPGA [ºC]         = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tThermFPGA = text(0.7 + hkHSpacing, topLinePosition - (3   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.5,              topLinePosition - (4   * hkVSpacing), 'Power', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
-  t          = text(0.7,              topLinePosition - (5   * hkVSpacing), 'Current [mA] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tCurrent5v = text(0.7 + hkHSpacing, topLinePosition - (5   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (6   * hkVSpacing), 'Voltage [V]    = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tVoltage5v = text(0.7 + hkHSpacing, topLinePosition - (6   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.5,              topLinePosition - (7   * hkVSpacing), 'Enables', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
-  t          = text(0.7,              topLinePosition - (8   * hkVSpacing), 'TEC Enable         = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tTecEnable = text(0.7 + hkHSpacing, topLinePosition - (8   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (9   * hkVSpacing), 'FF Lamp Enable = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tFFLEnable = text(0.7 + hkHSpacing, topLinePosition - (9   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.5,              topLinePosition - (10  * hkVSpacing), 'SD Card', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
-  t          = text(0.7,              topLinePosition - (11  * hkVSpacing), 'Start Frame     = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tSdStart   = text(0.7 + hkHSpacing, topLinePosition - (11  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (12  * hkVSpacing), 'Current Frame = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tSdCurrent = text(0.7 + hkHSpacing, topLinePosition - (12  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   ; CSOL housekeeping data
+;;   wchk = window(DIMENSIONS = windowSizeCsolHk, /NO_TOOLBAR, LOCATION = [windowSizeCsol[0] + 5, 2 * windowSize[1] + 78], BACKGROUND_COLOR = backgroundColor, WINDOW_TITLE = 'CSOL Housekeeping Data')
+;;   t          = text(0.5,              topLinePosition - (0   * hkVSpacing), 'Temperatures', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
+;;   t          = text(0.7,              topLinePosition - (1   * hkVSpacing), 'Detector 0 [ºC] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tThermDet0 = text(0.7 + hkHSpacing, topLinePosition - (1   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (2   * hkVSpacing), 'Detector 1 [ºC] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tThermDet1 = text(0.7 + hkHSpacing, topLinePosition - (2   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (3   * hkVSpacing), 'FPGA [ºC]         = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tThermFPGA = text(0.7 + hkHSpacing, topLinePosition - (3   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.5,              topLinePosition - (4   * hkVSpacing), 'Power', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
+;;   t          = text(0.7,              topLinePosition - (5   * hkVSpacing), 'Current [mA] = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tCurrent5v = text(0.7 + hkHSpacing, topLinePosition - (5   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (6   * hkVSpacing), 'Voltage [V]    = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tVoltage5v = text(0.7 + hkHSpacing, topLinePosition - (6   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.5,              topLinePosition - (7   * hkVSpacing), 'Enables', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
+;;   t          = text(0.7,              topLinePosition - (8   * hkVSpacing), 'TEC Enable         = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tTecEnable = text(0.7 + hkHSpacing, topLinePosition - (8   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (9   * hkVSpacing), 'FF Lamp Enable = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tFFLEnable = text(0.7 + hkHSpacing, topLinePosition - (9   * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.5,              topLinePosition - (10  * hkVSpacing), 'SD Card', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
+;;   t          = text(0.7,              topLinePosition - (11  * hkVSpacing), 'Start Frame     = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tSdStart   = text(0.7 + hkHSpacing, topLinePosition - (11  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (12  * hkVSpacing), 'Current Frame = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tSdCurrent = text(0.7 + hkHSpacing, topLinePosition - (12  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
 
-  t          = text(0.5,              topLinePosition - (13  * hkVSpacing), 'Int Time', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
-  t          = text(0.7,              topLinePosition - (14  * hkVSpacing), 'Row Period      = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tRowPeriod = text(0.7 + hkHSpacing, topLinePosition - (14  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (15  * hkVSpacing), 'Row per Int   = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tRowPerInt = text(0.7 + hkHSpacing, topLinePosition - (15  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  t          = text(0.7,              topLinePosition - (16  * hkVSpacing), 'Int Time (s)  = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
-  tIntTime   = text(0.7 + hkHSpacing, topLinePosition - (16  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.5,              topLinePosition - (13  * hkVSpacing), 'Int Time', ALIGNMENT = 0.5, FONT_COLOR = blueColor, FONT_SIZE = fontSizeHk + 6)
+;;   t          = text(0.7,              topLinePosition - (14  * hkVSpacing), 'Row Period      = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tRowPeriod = text(0.7 + hkHSpacing, topLinePosition - (14  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (15  * hkVSpacing), 'Row per Int   = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tRowPerInt = text(0.7 + hkHSpacing, topLinePosition - (15  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   t          = text(0.7,              topLinePosition - (16  * hkVSpacing), 'Int Time (s)  = ', ALIGNMENT = 1, FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
+;;   tIntTime   = text(0.7 + hkHSpacing, topLinePosition - (16  * hkVSpacing), '--', FONT_COLOR = fontColor, FONT_SIZE = fontSizeHk)
 
-  csolHkRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
-ENDIF
+;;   csolHkRefreshText = text(1.0, 0.0, 'Last full refresh: ' + JPMsystime(), COLOR = greenColor, ALIGNMENT = 1.0)
+;; ENDIF
 
 ; Initialize COMMON buffer variables
 ; MegsCcdLookupTable.sav is in the same directory as this code
@@ -281,22 +282,22 @@ path = file_dirname((scope_traceback(/str))[-1].filename) + path_sep()
 restore, path + 'MegsCcdLookupTable.sav'
 megsAImageBuffer = uintarr(2048L, 1024L)
 megsBImageBuffer = uintarr(2048L, 1024L)
-csolNumberGapPixels = 10
-csolImageBuffer = uintarr(2000L, (5L * 88L) + (csolNumberGapPixels * 4L))
+;;csolNumberGapPixels = 10
+;;csolImageBuffer = uintarr(2000L, (5L * 88L) + (csolNumberGapPixels * 4L))
 megsAImageIndex = 0L
 megsBImageIndex = 0L
 megsAPixelIndex = -1LL
 megsBPixelIndex = -1LL
-csolpixelindex = -1LL
+;;csolpixelindex = -1LL
 megsATotalPixelsFound = 0
 megsBTotalPixelsFound = 0
-csolTotalPixelsFound = 0
-csolRowNumberLatest = -1
+;;csolTotalPixelsFound = 0
+;;csolRowNumberLatest = -1
 
 ; Prepare image counter for how often to refresh the images
 displayImagesCounterMegsA = 0
 displayImagesCounterMegsB = 0
-displayImagesCounterCsol = 0
+;;displayImagesCounterCsol = 0
 
 processCounter = 0L ; count loops executed
 lastProcessCounter = -1L
@@ -396,12 +397,11 @@ WHILE 1 DO BEGIN
         ; debugging 2023 - issue was Altair had P1-P3 set up with scaling (float numbers)
         ; numberOfDataSamplesP2 *= 2
                 ;stop  ;  debug stop
-        IF keyword_set(DOCSOL) THEN BEGIN
-          offsetP3 = offsetP2 + 4 + sampleSizeDeweSoft * numberOfDataSamplesP2
-          numberOfDataSamplesP3 = byte2ulong(singleFullDeweSoftPacket[offsetP3:offsetP3 + 3])
-        ENDIF ELSE BEGIN
-          numberOfDataSamplesP3 = 0
-        ENDELSE
+        numberOfDataSamplesP3 = 0
+        ;;IF keyword_set(DOCSOL) THEN BEGIN
+        ;;  offsetP3 = offsetP2 + 4 + sampleSizeDeweSoft * numberOfDataSamplesP2
+        ;;  numberOfDataSamplesP3 = byte2ulong(singleFullDeweSoftPacket[offsetP3:offsetP3 + 3])
+        ;;ENDIF
 
         halfwayOffsetP1 = numberOfDataSamplesP1 / 2L + offsetP1 + 4
         halfwayOffsetP2 = numberOfDataSamplesP2 / 2L + offsetP2 + 4
@@ -428,9 +428,10 @@ WHILE 1 DO BEGIN
         ; Prepare for comparisons before and after interpretation
         megsAPixelIndexBefore = megsAPixelIndex
         megsBPixelIndexBefore = megsBPixelIndex
-        csolPixelIndexBefore = csolPixelIndex
+        ;;csolPixelIndexBefore = csolPixelIndex
 
-        rocket_eve_tm2_read_packets, singleFullDeweSoftPacket, DOMEGSA=DOMEGSA, DOMEGSB=DOMEGSB, DOCSOL=DOCSOL, DEBUG=DEBUG ; Output and additional inputs via COMMON buffers
+        ; 5/15/23 DLW removed CSOL from rocket_eve_tm2_read_packets
+        rocket_eve_tm2_read_packets, singleFullDeweSoftPacket, DOMEGSA=DOMEGSA, DOMEGSB=DOMEGSB, DEBUG=DEBUG ; Output and additional inputs via COMMON buffers
 
         ; If did not see anything update after reading packet, then set flag to skip that part of processing in this loop
         doMegsAProcessing = 0
@@ -453,16 +454,16 @@ WHILE 1 DO BEGIN
             ENDIF
           ENDIF
         ENDIF
-        doCsolProcessing = 0
-        if keyword_set(DOCSOL) then begin
-          IF csolPixelIndex NE csolPixelIndexBefore THEN BEGIN
-            displayImagesCounterCsol++
-            IF displayImagesCounterCsol GT frequencyOfImageDisplay THEN BEGIN
-              doCsolProcessing = 1
-              displayImagesCounterCsol = 0
-            ENDIF
-          ENDIF
-        ENDIF
+        ;; doCsolProcessing = 0
+        ;; if keyword_set(DOCSOL) then begin
+        ;;   IF csolPixelIndex NE csolPixelIndexBefore THEN BEGIN
+        ;;     displayImagesCounterCsol++
+        ;;     IF displayImagesCounterCsol GT frequencyOfImageDisplay THEN BEGIN
+        ;;       doCsolProcessing = 1
+        ;;       displayImagesCounterCsol = 0
+        ;;     ENDIF
+        ;;   ENDIF
+        ;; ENDIF
 
         ; -= MANIPULATE DATA AS NECESSARY =- ;
         IF doMegsAProcessing THEN BEGIN
@@ -576,46 +577,46 @@ WHILE 1 DO BEGIN
           megsBRefreshText.String = 'Last refresh: ' + JPMsystime()
         ENDIF ; doMegsBProcessing
 
-        IF doCsolProcessing THEN BEGIN
-          ; Update image
-          IF keyword_set(noMod256) THEN p3.SetData, csolImageBuffer ELSE $
-                                        p3.SetData, csolImageBuffer MOD 256
+        ;; IF doCsolProcessing THEN BEGIN
+        ;;   ; Update image
+        ;;   IF keyword_set(noMod256) THEN p3.SetData, csolImageBuffer ELSE $
+        ;;                                 p3.SetData, csolImageBuffer MOD 256
 
-          ; Update read indicator arrow
-          readArrowCSOL.SetData, [csolRowNumberLatest, csolRowNumberLatest], [-30, 0]
+        ;;   ; Update read indicator arrow
+        ;;   readArrowCSOL.SetData, [csolRowNumberLatest, csolRowNumberLatest], [-30, 0]
 
-          csolRefreshText.String = 'Last refresh: ' + JPMsystime()
+        ;;   csolRefreshText.String = 'Last refresh: ' + JPMsystime()
 
-          ; Update hk telemetry
-          IF csolHk NE !NULL THEN BEGIN
-            tThermDet0.String = JPMPrintNumber(csolHk.thermDet0)
-            tThermDet1.String = JPMPrintNumber(csolHk.thermDet1)
-            tThermFPGA.String = JPMPrintNumber(csolHk.thermFPGA)
-            tCurrent5v.String = JPMPrintNumber(csolHk.current5v)
-            tVoltage5v.String = JPMPrintNumber(csolHk.voltage5v)
-            IF csolHk.tecEnable EQ 1 THEN tTecEnable.String = 'True' ELSE IF csolHk.tecEnable EQ 0 THEN tTecEnable.String = 'False' ELSE tTecEnable.String = JPMPrintNumber(csolHk.tecEnable, /NO_DECIMALS)
-            IF csolHk.fflEnable EQ 1 THEN tFFLEnable.String = 'True' ELSE IF csolHk.fflEnable EQ 0 THEN tFFLEnable.String = 'False' ELSE tFFLEnable.String = JPMPrintNumber(csolHk.fflEnable, /NO_DECIMALS)
-            tSdStart.String = JPMPrintNumber(csolHk.sdStartFrameAddress, /NO_DECIMALS)
-            tSdCurrent.String = JPMPrintNumber(csolHk.sdCurrentFrameAddress, /NO_DECIMALS)
-            tRowPeriod.String = JPMPrintNumber(csolHk.rowPeriod, /NO_DECIMALS)
-            tRowPerInt.String = JPMPrintNumber(csolHk.rowPerInt, /NO_DECIMALS)
-            tIntTime.String = JPMPrintNumber(csolHk.intTime)
+        ;;   ; Update hk telemetry
+        ;;   IF csolHk NE !NULL THEN BEGIN
+        ;;     tThermDet0.String = JPMPrintNumber(csolHk.thermDet0)
+        ;;     tThermDet1.String = JPMPrintNumber(csolHk.thermDet1)
+        ;;     tThermFPGA.String = JPMPrintNumber(csolHk.thermFPGA)
+        ;;     tCurrent5v.String = JPMPrintNumber(csolHk.current5v)
+        ;;     tVoltage5v.String = JPMPrintNumber(csolHk.voltage5v)
+        ;;     IF csolHk.tecEnable EQ 1 THEN tTecEnable.String = 'True' ELSE IF csolHk.tecEnable EQ 0 THEN tTecEnable.String = 'False' ELSE tTecEnable.String = JPMPrintNumber(csolHk.tecEnable, /NO_DECIMALS)
+        ;;     IF csolHk.fflEnable EQ 1 THEN tFFLEnable.String = 'True' ELSE IF csolHk.fflEnable EQ 0 THEN tFFLEnable.String = 'False' ELSE tFFLEnable.String = JPMPrintNumber(csolHk.fflEnable, /NO_DECIMALS)
+        ;;     tSdStart.String = JPMPrintNumber(csolHk.sdStartFrameAddress, /NO_DECIMALS)
+        ;;     tSdCurrent.String = JPMPrintNumber(csolHk.sdCurrentFrameAddress, /NO_DECIMALS)
+        ;;     tRowPeriod.String = JPMPrintNumber(csolHk.rowPeriod, /NO_DECIMALS)
+        ;;     tRowPerInt.String = JPMPrintNumber(csolHk.rowPerInt, /NO_DECIMALS)
+        ;;     tIntTime.String = JPMPrintNumber(csolHk.intTime)
 
-            ; Limit check / red/green coloring
-            IF csolHk.thermDet0 LT 20 OR csolHk.thermDet0 GT 0 THEN tThermDet0.Color = greenColor ELSE tThermDet0.Color = redColor
-            IF csolHk.thermDet1 LT 20 OR csolHk.thermDet1 GT 0 THEN tThermDet1.Color = greenColor ELSE tThermDet1.Color = redColor
-            IF csolHk.thermFPGA LT 60 OR csolHk.thermFPGA GT 15 THEN tThermFPGA.Color = greenColor ELSE tThermFPGA.Color = redColor
-            IF csolHk.current5v LT 380 OR csolHk.current5v GT 300 THEN tCurrent5v.Color = greenColor ELSE tCurrent5v.Color = redColor
-            IF csolHk.voltage5v LT 5.5 OR csolHk.voltage5v GT 4.5 THEN tVoltage5v.Color = greenColor ELSE tVoltage5v.Color = redColor
-            IF csolHk.tecEnable EQ 1 THEN tTecEnable.Color = greenColor ELSE tTecEnable.Color = redColor
-            IF csolHk.fflEnable EQ 0 THEN tFFLEnable.Color = greenColor ELSE tFFLEnable.Color = redColor
-            IF csolHk.intTime GT 10.23 AND csolHK.intTime LT 10.25 THEN tIntTime.Color = greenColor ELSE tIntTime.Color = redColor
+        ;;     ; Limit check / red/green coloring
+        ;;     IF csolHk.thermDet0 LT 20 OR csolHk.thermDet0 GT 0 THEN tThermDet0.Color = greenColor ELSE tThermDet0.Color = redColor
+        ;;     IF csolHk.thermDet1 LT 20 OR csolHk.thermDet1 GT 0 THEN tThermDet1.Color = greenColor ELSE tThermDet1.Color = redColor
+        ;;     IF csolHk.thermFPGA LT 60 OR csolHk.thermFPGA GT 15 THEN tThermFPGA.Color = greenColor ELSE tThermFPGA.Color = redColor
+        ;;     IF csolHk.current5v LT 380 OR csolHk.current5v GT 300 THEN tCurrent5v.Color = greenColor ELSE tCurrent5v.Color = redColor
+        ;;     IF csolHk.voltage5v LT 5.5 OR csolHk.voltage5v GT 4.5 THEN tVoltage5v.Color = greenColor ELSE tVoltage5v.Color = redColor
+        ;;     IF csolHk.tecEnable EQ 1 THEN tTecEnable.Color = greenColor ELSE tTecEnable.Color = redColor
+        ;;     IF csolHk.fflEnable EQ 0 THEN tFFLEnable.Color = greenColor ELSE tFFLEnable.Color = redColor
+        ;;     IF csolHk.intTime GT 10.23 AND csolHK.intTime LT 10.25 THEN tIntTime.Color = greenColor ELSE tIntTime.Color = redColor
 
-            csolHkRefreshText.String = 'Last refresh: ' + JPMsystime()
-          ENDIF
+        ;;     csolHkRefreshText.String = 'Last refresh: ' + JPMsystime()
+        ;;   ENDIF
 
-          csolHk = !NULL
-        ENDIF ; doCsolProcessing
+        ;;   csolHk = !NULL
+        ;; ENDIF ; doCsolProcessing
 
         !Except = 1 ; Re-enable math error logging
 
