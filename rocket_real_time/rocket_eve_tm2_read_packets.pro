@@ -74,15 +74,18 @@
 ;   2018-05-10: James Paul Mason: Support for Compact SOLSTICE (CSOL), which replaces XRI everywhere in the code. 
 ;   2018-05-29: James Paul Mason: Field updates to get CSOL image and housekeeping working. 
 ;   2018-06-11: Don Woodraska: Ignoring bad values where csolRowNumberLatest>2000 to work with 5 sec int time
+;   2023-05-15: Don Woodraska: Vectorized image assignment for MEGS-A and B based on Vicki's code,
+;               speed improvement ~40% (from 3.1 to 1.9 sec/image in playback on MacL4953 Apple M2 using external monitor)
+;               commented CSOL code, ready to remove
 ;-
 PRO rocket_eve_tm2_read_packets, socketData, $
-                                 DOMEGSA=DOMEGSA, DOMEGSB=DOMEGSB, DOCSOL=DOCSOL, VERBOSE=VERBOSE, DEBUG=DEBUG
+                                 DOMEGSA=DOMEGSA, DOMEGSB=DOMEGSB, VERBOSE=VERBOSE, DEBUG=DEBUG
 
 ; COMMON blocks for use with eve_real_time_socket_read_wrapper. The blocks are defined here and there to allow them to be called independently.
 COMMON MEGS_PERSISTENT_DATA, megsCcdLookupTable
 COMMON MEGS_A_PERSISTENT_DATA, megsAImageBuffer, megsAImageIndex, megsAPixelIndex, megsATotalPixelsFound
 COMMON MEGS_B_PERSISTENT_DATA, megsBImageBuffer, megsBImageIndex, megsBPixelIndex, megsBTotalPixelsFound
-COMMON CSOL_PERSISTENT_DATA, csolImageBuffer, csolPixelIndex, csolRowNumberLatest, csolTotalPixelsFound, csolNumberGapPixels, csolHk
+;COMMON CSOL_PERSISTENT_DATA, csolImageBuffer, csolPixelIndex, csolRowNumberLatest, csolTotalPixelsFound, csolNumberGapPixels, csolHk
 COMMON DEWESOFT_PERSISTENT_DATA, sampleSizeDeweSoft, offsetP1, numberOfDataSamplesP1, offsetP2, numberOfDataSamplesP2, offsetP3, numberOfDataSamplesP3 ; Note P1 = MEGS-A, P2 = MEGS-B, P3 = CSOL
 
 ; Telemetry stream packet structure
@@ -99,9 +102,9 @@ nint = nbytes / 2L
 ;sync2Offset = nint - 2L ; 1L if reading binary file, because WSMR moves sync1 to beginning of packet, making sync2 the end of the packet
 
 ; Instrument packet fiducial values (sync words)
-csolFrameStartFiducialValue1 = '5555'X
-csolFrameStartFiducialValue2 = 'A5A5'X
-csolFrameEndFiducialValue1   = '5A5A'X
+;csolFrameStartFiducialValue1 = '5555'X
+;csolFrameStartFiducialValue2 = 'A5A5'X
+;csolFrameEndFiducialValue1   = '5A5A'X
 megsFiducialValue1           = 'FFFF'X
 megsFiducialValue2           = 'AAAA'X
 
@@ -114,15 +117,20 @@ ENDIF
 IF keyword_set(DOMEGSB) THEN BEGIN
   megsBPacketDataWithFiller = strip_dewesoft_header_and_trailer(socketData, offsetP2, numberOfDataSamplesP2, sampleSizeDeweSoft) ; [uintarr]
 ENDIF
-IF keyword_set(DOCSOL) THEN BEGIN
-  csolPacketDataWithFiller = strip_dewesoft_header_and_trailer(socketData, offsetP3, numberOfDataSamplesP3, sampleSizeDeweSoft) ; [uintarr]
-ENDIF
+;IF keyword_set(DOCSOL) THEN BEGIN
+;  csolPacketDataWithFiller = strip_dewesoft_header_and_trailer(socketData, offsetP3, numberOfDataSamplesP3, sampleSizeDeweSoft) ; [uintarr]
+;ENDIF
 
 ;
 ;
 ; -= INSTRUMENT: MEGS-A =- ;
 ;
 ;
+
+maxPixelsPerImage = 2048L*1024L
+vectorize=1                     ; 0 disable, 1 enable
+; leaving nonvectorized code for assembly checking
+; image assembly validated 5/15/23 DLW
 
 ;
 ; TASK 2: Remove filler. WSMR stuffs in 0x7E7E. End up with new variable, instrumentPacketData.
@@ -137,24 +145,35 @@ IF keyword_set(DOMEGSA) THEN BEGIN
     ; TASK 3: Store pixels in common buffer. (Note: MEGS needs to be “unzipped”). 
     ;
 
-    megsAPixels = ((megsAPacketData + '2000'X) AND '3FFF'X)
+    megsAPixels = ((megsAPacketData + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
+    packetSize = n_elements(megsaPacketData)
 
-    FOR packetIndex = 0, n_elements(megsAPacketData) - 1 DO BEGIN
-      IF megsAPixelIndex LT 2048LL * 1024LL THEN BEGIN
-        megsACcdColumnRow = megsCcdLookupTable[1:2, megsAPixelIndex]
-        ;megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = ((megsAPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
-        megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = megsAPixels[packetIndex] ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
-        megsAPixelIndex++
-      ENDIF
-    ENDFOR
-    megsATotalPixelsFound += n_elements(megsAPacketData)
+    ; vectorized assignment into image (no loops, no conditionals)
+    if vectorize then begin
+       megsAPixelIndexArr = lindgen(packetSize, start=megsAPixelIndex) mod maxPixelsPerImage
+       xidx = reform(megsCCDLookupTable[1,megsAPixelIndexArr])
+       yidx = reform(megsCCDLookupTable[2,megsAPixelIndexArr])
+       megsAImageBuffer[xidx, yidx] = megsAPixels ; vector assignment
+       megsaPixelIndex += packetSize              ;n_elements(megsAPacketData)
+    endif else begin
+    ; scalar assignment
+       FOR packetIndex = 0, n_elements(megsAPacketData) - 1 DO BEGIN
+          IF megsAPixelIndex LT maxPixelsPerImage THEN BEGIN
+             megsACcdColumnRow = megsCcdLookupTable[1:2, megsAPixelIndex]
+             megsAImageBuffer[megsACcdColumnRow[0], megsACcdColumnRow[1]] = megsAPixels[packetIndex]
+             megsAPixelIndex++
+          ENDIF
+       ENDFOR
+    endelse
+    
+    megsATotalPixelsFound += packetSize ;n_elements(megsAPacketData)
     IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime() + ' MEGS-A total pixels found in this image so far: ' + strtrim(megsATotalPixelsFound, 2) ;JPMPrintNumber(megsATotalPixelsFound, /NO_DECIMALS)
     
     ;
     ;   TASK 4: Check limits:
     ;      4.1: If totalPixels GT imageSize, issue warning.
     ;
-    IF megsATotalPixelsFound GT 2048LL * 1024LL THEN BEGIN
+    IF megsATotalPixelsFound GT maxPixelsPerImage THEN BEGIN
       message, /INFO, JPMsystime() + ' MEGS A image has accumulated too many pixels. Expected 2048x1024 = 2,097,152 pixels but received ' + JPMPrintNumber(megsATotalPixelsFound, /NO_DECIMALS)
       megsAPixelIndex = 0LL
       megsATotalPixelsFound = 0L
@@ -168,16 +187,19 @@ IF keyword_set(DOMEGSA) THEN BEGIN
     ;
     ; TASK 4.2: If totalPixels LE imageSize, issue warning.
     ;
-    IF megsATotalPixelsFound LT 2048L * 1024L - 2L AND megsATotalPixelsFound NE 0 THEN BEGIN ; -2 because we're expecting to lose two pixels due to including fiducials
+    IF megsATotalPixelsFound LT maxPixelsPerImage - 2L AND megsATotalPixelsFound NE 0 THEN BEGIN ; -2 because we're expecting to lose two pixels due to including fiducials
       ;IF keyword_set(DEBUG) OR keyword_set(VERBOSE) THEN BEGIN
-        numberLostPixels = (2048L * 1024L - 2L) - megsATotalPixelsFound
+        numberLostPixels = (maxPixelsPerImage - 2L) - megsATotalPixelsFound
         message, /INFO, JPMsystime() + ' Lost ' + JPMPrintNumber(numberLostPixels, /NO_DECIMALS) + ' MEGS-A pixels'
         ;message, /INFO, JPMsystime() + ' Some MEGS A data in previous image was lost. Expected 2048x1024 = 2,097,152 pixels but received ' + JPMPrintNumber(megsATotalPixelsFound, /NO_DECIMALS)
       ;ENDIF
     ENDIF 
-    IF megsATotalPixelsFound EQ 2048L * 1024L - 2L THEN BEGIN ; -2 because we're expecting to lose two pixels due to including fiducials
-      message, /INFO, JPMsystime() + ' Expected number of pixels found. Hooray!'
-    ENDIF 
+    IF megsATotalPixelsFound EQ maxPixelsPerImage - 2L THEN BEGIN ; -2 because we're expecting to lose two pixels due to including fiducials
+       message, /INFO, JPMsystime() + ' Expected number of pixels found. Hooray!'
+       ; for timing use these to print a message for each complete image
+       ;toc
+       ;tic
+   ENDIF 
     
     ; Reset image pointers for a new image
     megsAPixelIndex = 0LL
@@ -201,21 +223,30 @@ IF keyword_set(DOMEGSB) THEN BEGIN
   IF numberOfFoundMegsBPixels NE 0 THEN BEGIN
     
     megsBPacketData = megsBPacketDataWithFiller[megsBPacketDataGoodIndices]
-     
+    packetSize = n_elements(megsBPacketData)
+       
     ;
     ; TASK 3: Store pixels in common buffer. (Note: MEGS needs to be “unzipped”).
     ;
 
     megsBPixels = ((megsBPacketData + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
 
-    FOR packetIndex = 0, n_elements(megsBPacketData) - 1 DO BEGIN
-      IF megsBPixelIndex LT 2048LL * 1024LL THEN BEGIN
-        megsBCcdColumnRow = megsCcdLookupTable[1:2, megsBPixelIndex]
-        ;megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = ((megsBPacketData[packetIndex] + '2000'X) AND '3FFF'X) ; The 0x2000 and 0x3FFF mask out the extra 2 bits (14 bits instead of 16)
-        megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = megsBPixels[packetIndex]
-        megsBPixelIndex++
-      ENDIF
-    ENDFOR
+    ; vectorized assignment into image (no loops, no conditionals)
+    if vectorize then begin
+       megsBPixelIndexArr = lindgen(packetSize, start=megsBPixelIndex) mod maxPixelsPerImage
+       xidx = reform(megsCCDLookupTable[1,megsBPixelIndexArr])
+       yidx = reform(megsCCDLookupTable[2,megsBPixelIndexArr])
+       megsBImageBuffer[xidx, yidx] = megsBPixels ; vector assignment
+       megsBPixelIndex += packetSize              ;n_elements(megsAPacketData)
+    endif else begin
+       FOR packetIndex = 0, n_elements(megsBPacketData) - 1 DO BEGIN
+          IF megsBPixelIndex LT maxPixelsPerImage THEN BEGIN
+             megsBCcdColumnRow = megsCcdLookupTable[1:2, megsBPixelIndex]
+             megsBImageBuffer[megsBCcdColumnRow[0], megsBCcdColumnRow[1]] = megsBPixels[packetIndex]
+             megsBPixelIndex++
+          ENDIF
+       ENDFOR
+    endelse
     megsBTotalPixelsFound += n_elements(megsBPacketData)
     IF keyword_set(DEBUG) THEN message, /INFO, JPMsystime () + ' MEGS-B total pixels found in this image so far: ' + JPMPrintNumber(megsBTotalPixelsFound, /NO_DECIMALS)
     
@@ -223,7 +254,7 @@ IF keyword_set(DOMEGSB) THEN BEGIN
     ;   TASK 4: Check limits:
     ;      4.1: If totalPixels GT imageSize, issue warning.
     ;
-    IF megsBTotalPixelsFound GT 2048L * 1024L THEN BEGIN
+    IF megsBTotalPixelsFound GT maxPixelsPerImage THEN BEGIN
       message, /INFO, JPMsystime() + ' MEGS B image has accumulated too many pixels. Expected 2048x1024 = 2,097,152 pixels but received ' + JPMPrintNumber(megsBTotalPixelsFound, /NO_DECIMALS)
       megsBPixelIndex = 0LL
       megsBTotalPixelsFound = 0L
@@ -235,9 +266,9 @@ IF keyword_set(DOMEGSB) THEN BEGIN
     ; the remaining bandwidth (10 Mbps) of the telemetry link with filler. 
     
     ; TASK 4.2: If totalPixels LE imageSize, issue warning. 
-    IF megsBTotalPixelsFound LT 2048L * 1024L - 2L AND megsBTotalPixelsFound NE 0 THEN BEGIN
+    IF megsBTotalPixelsFound LT maxPixelsPerImage - 2L AND megsBTotalPixelsFound NE 0 THEN BEGIN
       ;IF keyword_set(DEBUG) OR keyword_set(VERBOSE) THEN BEGIN
-        numberLostPixels = (2048L * 1024L - 2L) - megsBTotalPixelsFound
+        numberLostPixels = (maxPixelsPerImage - 2L) - megsBTotalPixelsFound
         message, /INFO, JPMsystime() + ' Lost ' + JPMPrintNumber(numberLostPixels, /NO_DECIMALS) + ' MEGS-B pixels'
         ;message, /INFO, JPMsystime() + $ ; -2 because we're expecting to lose two pixels due to including fiducials
         ;                ' Some MEGS B data in previous image was lost. Expected 2048x1024 = 2,097,152 pixels but received ' + JPMPrintNumber(megsBTotalPixelsFound, /NO_DECIMALS)
@@ -252,6 +283,16 @@ IF keyword_set(DOMEGSB) THEN BEGIN
     megsBImageIndex++  
   ENDELSE
 ENDIF ; DOMEGSB
+
+return
+end
+
+; DLW 5/15/23 stripping out CSOL code
+
+
+
+; UNREACHABLE CODE NOW
+
 
 ;
 ;
