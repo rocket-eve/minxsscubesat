@@ -305,8 +305,8 @@ lastProcessCounter = -1L
 WHILE 1 DO BEGIN
 
   ; Start a timer
-  wrapperClock = TIC()
-
+  ;wrapperClock = TIC()
+  
   ; Store how many bytes are on the socket
   if ~keyword_set(playback) then begin  
     read_again:
@@ -536,7 +536,7 @@ WHILE 1 DO BEGIN
           ; Update image
           IF keyword_set(noMod256) THEN p0.SetData, megsAImageBuffer ELSE $
                                         p0.SetData, megsAImageBuffer MOD 256
-
+          
           ; Update read indicator arrows
           readArrowMegsALeft.SetData, [-50, 0], [1023 - megsACurrentColumn, 1023 - megsACurrentColumn]
           readArrowMegsARight.SetData, [2098., 2048.], [megsACurrentColumn, megsACurrentColumn]
@@ -629,9 +629,9 @@ WHILE 1 DO BEGIN
     ENDIF ; If numSync7s GE 2
   ENDIF ; If socketDataSize GT 0
 
-  IF keyword_set(VERBOSE) THEN BEGIN
-    message, /INFO, JPMsystime() + ' Finished processing socket data in ' + JPMPrintNumber(TOC(wrapperClock), /NO_DECIMALS) + ' seconds'
-  ENDIF
+  ;IF keyword_set(VERBOSE) THEN BEGIN
+  ;  message, /INFO, JPMsystime() + ' Finished processing socket data in ' + JPMPrintNumber(TOC(wrapperClock), /NO_DECIMALS) + ' seconds'
+  ;ENDIF
   processCounter++
 ENDWHILE ; Infinite loop
 
