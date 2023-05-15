@@ -11,12 +11,38 @@
 function playback_dewesoft_packet, tm1=tm1, tm2=tm2
 
   common playback_dewesoft_packet, tmfile, tmfile_lun, filedata, pktnumber, pktstart, pktend, n_pktend
-  
+
+  ; default path
+  ;dpath = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/' ; Tom moved location in dropbox after 36.389 launch
+  dpath = getenv('HOME')+'/Dropbox/minxss_dropbox/rocket_eve/36.389/TM_Data/'
+
   if keyword_set(tm1) then begin
-    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm1_files/rocket_tm1_bin_2023-04-20_10_08_10.bin'
+     file = 'rocket_tm1_bin_2023-04-20_10_08_10.bin'
+     tmfilepath = dpath + 'tm1_files/'
   endif else begin
-    tmfile = getenv('HOME')+'/Dropbox/minxss_dropbox/data/reve_36_389/tm2_files/rocket_tm2_bin_2023-04-14_14_24_19.bin'
+     ;file = 'rocket_tm2_bin_2023-04-14_14_24_19.bin'
+     file = 'rocket_tm2_bin_2023-04-20_09_43_47.bin'
+     tmfilepath = dpath + 'tm2_files/'
   endelse
+  
+  ; search for the file
+  tmfile = file_search(tmfilepath+file, count=count)
+
+  ; if cannot find file, look in this dir where this code was found
+  ; don't commit data to git
+  if count eq 0 then begin
+     ; this is useful for laptop debugging
+     oldtmfilepath = tmfilepath
+     tmfilepath = file_dirname((scope_traceback(/str))[-1].filename) + path_sep()
+     tmfile = file_search(tmfilepath + file,count=count)
+     if count eq 0 then begin
+        print,'ERROR: playback_dewesoft - cannot locate file '+file
+        print,' - looked in '+ oldtmfilepath
+        print,' - looked in '+ tmfilepath
+        print,' check filename and path'
+        stop
+     endif
+  endif
 
   if size(filedata,/type) eq 0 then begin
     openr, tmfile_lun, tmfile, /get
