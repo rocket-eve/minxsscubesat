@@ -74,7 +74,7 @@
 ;   2018-05-10: James Paul Mason: Support for Compact SOLSTICE (CSOL), which replaces XRI everywhere in the code. 
 ;   2018-05-29: James Paul Mason: Field updates to get CSOL image and housekeeping working. 
 ;   2018-06-11: Don Woodraska: Ignoring bad values where csolRowNumberLatest>2000 to work with 5 sec int time
-;   2023-05-15: Don Woodraska: Vectorized image assignment for MEGS-A and B based on Vicki's code,
+;   2023-05-15: Don Woodraska: Vectorized image assignment for MEGS-A and B based on Vicki's code, can be enabled/disabled,
 ;               speed improvement ~40% (from 3.1 to 1.9 sec/image in playback on MacL4953 Apple M2 using external monitor)
 ;               commented CSOL code, ready to remove
 ;-
